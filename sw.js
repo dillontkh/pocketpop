@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pocketpop-cache-v1';
+const CACHE_NAME = 'pocketpop-cache-v1.2'; // Increment this version whenever you update assets/UI to force an immediate update toast for users.
 const ASSETS = [
   './',
   './index.html',
@@ -13,7 +13,23 @@ const ASSETS = [
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(ASSETS);
+      // Force fetching fresh assets from network during installation rather than using browser cache
+      return Promise.all(
+        ASSETS.map(asset => {
+          return fetch(new Request(asset, { cache: 'reload' }))
+            .then(response => {
+              if (response.ok) {
+                return cache.put(asset, response);
+              }
+              throw new Error(`Failed to fetch ${asset}`);
+            })
+            .catch(err => {
+              console.warn(`Failed to cache ${asset} during install:`, err);
+              // Fallback to caching normal request if cache: 'reload' fails (e.g. cross-origin CDN assets)
+              return cache.add(asset);
+            });
+        })
+      );
     })
   );
   self.skipWaiting();
@@ -35,22 +51,50 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// Fetch event - cache-first with network fallback
+// Fetch event
 self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request).then(cachedResponse => {
-      return cachedResponse || fetch(event.request).then(response => {
-        // Cache external requests dynamically (like fonts or scripts loaded at runtime)
-        if (event.request.url.startsWith('http')) {
-          return caches.open(CACHE_NAME).then(cache => {
-            cache.put(event.request, response.clone());
-            return response;
+  // Only intercept GET requests
+  if (event.request.method !== 'GET') return;
+
+  const url = new URL(event.request.url);
+
+  // Exclude service worker file itself from being intercepted or cached
+  if (url.pathname.endsWith('sw.js')) return;
+
+  // Stale-While-Revalidate for local assets (same-origin)
+  if (url.origin === self.location.origin) {
+    event.respondWith(
+      caches.open(CACHE_NAME).then(cache => {
+        return cache.match(event.request).then(cachedResponse => {
+          const fetchPromise = fetch(event.request).then(networkResponse => {
+            if (networkResponse && networkResponse.status === 200) {
+              cache.put(event.request, networkResponse.clone());
+            }
+            return networkResponse;
+          }).catch(() => {
+            // Ignore network errors (e.g., offline)
           });
-        }
-        return response;
-      }).catch(() => {
-        // Fallback or silent error if offline and cache misses
-      });
-    })
-  );
+          // Return the cached response immediately if it exists, otherwise wait for the network response
+          return cachedResponse || fetchPromise;
+        });
+      })
+    );
+  } else {
+    // Cache-First with network fallback for external assets (CDNs, Google Fonts)
+    event.respondWith(
+      caches.match(event.request).then(cachedResponse => {
+        return cachedResponse || fetch(event.request).then(response => {
+          if (response && response.status === 200) {
+            return caches.open(CACHE_NAME).then(cache => {
+              cache.put(event.request, response.clone());
+              return response;
+            });
+          }
+          return response;
+        }).catch(() => {
+          // Offline fallback
+        });
+      })
+    );
+  }
 });
