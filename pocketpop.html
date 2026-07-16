@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- Viewport for mobile optimization -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PocketPop</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Quicksand', sans-serif;
+            touch-action: manipulation; /* Prevent double-tap zoom on mobile */
+        }
+
+        /* Toy Aesthetic Utilities */
+        .toy-border { border: 3px solid #1f2937; }
+        .toy-shadow { box-shadow: 4px 4px 0px 0px #1f2937; }
+        .toy-shadow-sm { box-shadow: 2px 2px 0px 0px #1f2937; }
+        
+        .toy-interactive { transition: all 0.05s ease-in-out; }
+        .toy-interactive:active {
+            transform: translate(3px, 3px);
+            box-shadow: 1px 1px 0px 0px #1f2937;
+        }
+
+        .toy-interactive-sm { transition: all 0.05s ease-in-out; }
+        .toy-interactive-sm:active {
+            transform: translate(2px, 2px);
+            box-shadow: 0px 0px 0px 0px #1f2937;
+        }
+
+        /* Hide spin buttons on number inputs */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+
+        /* History Drawer Animation */
+        #history-drawer {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .drawer-closed {
+            transform: translateY(calc(100% - 4rem)); /* 4rem is the header height */
+        }
+        .drawer-open {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body class="bg-sky-100 h-screen w-screen overflow-hidden flex flex-col relative text-gray-800">
+
+    <!-- ONBOARDING VIEW -->
+    <div id="view-setup" class="absolute inset-0 z-20 bg-yellow-300 flex flex-col items-center justify-center p-6 hidden">
+        <div class="bg-white p-8 rounded-3xl toy-border toy-shadow max-w-sm w-full text-center">
+            <h1 class="text-4xl font-black text-pink-500 mb-4 tracking-tight">PocketPop!</h1>
+            <p class="text-lg font-bold mb-8 text-gray-600">Set your daily pocket money. We'll add this amount every midnight!</p>
+            
+            <div class="relative mb-6 w-full">
+                <!-- Speech Bubble Error -->
+                <div id="setup-error" class="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-white toy-border rounded-xl px-4 py-2 text-pink-600 font-bold text-sm z-10 whitespace-nowrap opacity-0 pointer-events-none transition-opacity duration-200">
+                    Amount must be > 0!
+                    <div class="absolute -bottom-[8px] left-1/2 transform -translate-x-1/2 w-3 h-3 bg-white border-b-[3px] border-r-[3px] border-gray-800 rotate-45"></div>
+                </div>
+
+                <div class="relative">
+                    <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-3xl font-black text-gray-300">$</span>
+                    <input type="number" id="setup-input" placeholder="0" class="w-full bg-gray-50 rounded-2xl toy-border toy-shadow-sm text-4xl font-black p-4 pl-12 text-center outline-none focus:bg-white transition-colors" inputmode="decimal">
+                </div>
+            </div>
+            
+            <button id="btn-start" class="w-full bg-green-400 text-white rounded-2xl toy-border toy-shadow toy-interactive text-2xl font-black py-4">
+                Let's Go!
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN DASHBOARD VIEW -->
+    <div id="view-main" class="flex-1 flex flex-col h-full relative hidden">
+        
+        <!-- Header -->
+        <header class="flex justify-between items-center p-4 pt-6 shrink-0">
+            <h1 class="text-2xl font-black text-pink-500 tracking-tight">PocketPop</h1>
+            <button id="btn-reset" class="bg-white rounded-full px-4 py-2 text-sm font-bold toy-border toy-shadow-sm toy-interactive-sm text-gray-600">
+                🔄 Payday Reset
+            </button>
+        </header>
+
+        <!-- Balance Display -->
+        <div class="flex-1 flex flex-col items-center justify-center px-4 -mt-10 shrink-0">
+            <h2 class="text-lg font-bold text-gray-500 uppercase tracking-widest mb-2">Available Budget</h2>
+            <div id="balance-display" class="text-7xl font-black tracking-tighter truncate w-full text-center px-2">
+                $0.00
+            </div>
+            <div class="text-sm font-bold text-gray-400 mt-2">
+                +<span id="daily-amount-display">0</span> added daily
+            </div>
+        </div>
+
+        <!-- Transaction Input Area -->
+        <div class="px-4 pb-[5rem] shrink-0"> <!-- Padding bottom accounts for collapsed drawer -->
+            <div class="bg-white p-4 rounded-3xl toy-border toy-shadow flex flex-col gap-3">
+                
+                <div class="relative w-full">
+                    <!-- Speech Bubble Error -->
+                    <div id="tx-error" class="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-white toy-border rounded-xl px-3 py-1.5 text-pink-600 font-bold text-sm z-10 whitespace-nowrap opacity-0 pointer-events-none transition-opacity duration-200">
+                        Enter a valid amount!
+                        <div class="absolute -bottom-[8px] left-1/2 transform -translate-x-1/2 w-3 h-3 bg-white border-b-[3px] border-r-[3px] border-gray-800 rotate-45"></div>
+                    </div>
+
+                    <div class="relative">
+                        <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-2xl font-black text-gray-300">$</span>
+                        <input type="number" id="tx-amount" placeholder="0" class="w-full bg-gray-50 rounded-2xl toy-border toy-shadow-sm text-3xl font-black p-3 pl-10 text-center outline-none focus:bg-white" inputmode="decimal">
+                    </div>
+                </div>
+                
+                <input type="text" id="tx-desc" placeholder="What was it for? (Optional)" class="w-full bg-gray-50 rounded-xl border-2 border-gray-200 text-lg font-bold p-3 text-center outline-none focus:border-gray-800 transition-colors">
+                
+                <div class="flex gap-3 mt-1">
+                    <button id="btn-spend" class="flex-[3] bg-pink-500 text-white rounded-2xl toy-border toy-shadow toy-interactive py-4 flex items-center justify-center">
+                        <i data-lucide="arrow-up" class="w-8 h-8" stroke-width="3"></i>
+                    </button>
+                    <button id="btn-get" class="flex-[1] bg-green-400 text-white rounded-2xl toy-border toy-shadow toy-interactive py-4 flex items-center justify-center">
+                        <i data-lucide="arrow-down" class="w-8 h-8" stroke-width="3"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HISTORY DRAWER (Collapsible) -->
+    <div id="history-drawer" class="absolute bottom-0 left-0 w-full h-[60%] bg-yellow-50 rounded-t-3xl toy-border toy-shadow drawer-closed flex flex-col z-10">
+        
+        <!-- Drawer Handle/Header -->
+        <div id="drawer-header" class="h-16 w-full flex items-center justify-between px-6 cursor-pointer bg-yellow-300 rounded-t-3xl border-b-3 border-gray-800 shrink-0">
+            <h3 class="font-black text-xl text-gray-800">History</h3>
+            <div id="drawer-icon" class="transition-transform duration-300 flex items-center justify-center text-gray-800">
+                <i data-lucide="chevron-up" class="w-7 h-7" stroke-width="3"></i>
+            </div>
+        </div>
+
+        <!-- Transaction List -->
+        <div class="flex-1 overflow-y-auto p-4 flex flex-col gap-3" id="history-list">
+            <!-- Transactions injected here by JS -->
+        </div>
+    </div>
+
+    <script>
+        // --- State Management ---
+        let state = {
+            budget: 0,
+            balance: 0,
+            lastLogin: null,
+            transactions: [] // { id, amount, type ('spend'|'get'), desc, date }
+        };
+
+        const STORAGE_KEY = 'pocketpop_data';
+
+        // --- DOM Elements ---
+        const els = {
+            viewSetup: document.getElementById('view-setup'),
+            viewMain: document.getElementById('view-main'),
+            
+            setupInput: document.getElementById('setup-input'),
+            setupError: document.getElementById('setup-error'),
+            btnStart: document.getElementById('btn-start'),
+            
+            balanceDisplay: document.getElementById('balance-display'),
+            dailyDisplay: document.getElementById('daily-amount-display'),
+            btnReset: document.getElementById('btn-reset'),
+            
+            txAmount: document.getElementById('tx-amount'),
+            txDesc: document.getElementById('tx-desc'),
+            txError: document.getElementById('tx-error'),
+            btnSpend: document.getElementById('btn-spend'),
+            btnGet: document.getElementById('btn-get'),
+            
+            drawer: document.getElementById('history-drawer'),
+            drawerHeader: document.getElementById('drawer-header'),
+            drawerIcon: document.getElementById('drawer-icon'),
+            historyList: document.getElementById('history-list')
+        };
+
+        // --- Utility: Speech Bubble Errors ---
+        function showError(element) {
+            element.classList.remove('opacity-0');
+            setTimeout(() => {
+                element.classList.add('opacity-0');
+            }, 2500);
+        }
+
+        // --- Storage & Bootup ---
+        function loadData() {
+            const data = localStorage.getItem(STORAGE_KEY);
+            if (data) {
+                state = JSON.parse(data);
+                processRollovers();
+                showMainView();
+            } else {
+                els.viewSetup.classList.remove('hidden');
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        }
+
+        function processRollovers() {
+            if (!state.lastLogin) return;
+            
+            const now = new Date();
+            const last = new Date(state.lastLogin);
+            
+            // Normalize to midnight to calculate pure days passed
+            const nowMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+            const lastMidnight = new Date(last.getFullYear(), last.getMonth(), last.getDate()).getTime();
+            
+            const daysPassed = Math.floor((nowMidnight - lastMidnight) / (1000 * 60 * 60 * 24));
+            
+            if (daysPassed > 0) {
+                state.balance += (state.budget * daysPassed);
+                state.lastLogin = now.toISOString();
+                saveData();
+            }
+        }
+
+        function updateUI() {
+            // Update Balance Color and Text
+            els.balanceDisplay.innerText = `$${state.balance.toFixed(2)}`;
+            if (state.balance < 0) {
+                els.balanceDisplay.classList.remove('text-green-500', 'text-gray-800');
+                els.balanceDisplay.classList.add('text-orange-500');
+            } else if (state.balance > 0) {
+                els.balanceDisplay.classList.remove('text-orange-500', 'text-gray-800');
+                els.balanceDisplay.classList.add('text-green-500');
+            } else {
+                els.balanceDisplay.classList.remove('text-orange-500', 'text-green-500');
+                els.balanceDisplay.classList.add('text-gray-800');
+            }
+
+            els.dailyDisplay.innerText = `$${state.budget}`;
+            renderHistory();
+        }
+
+        function showMainView() {
+            els.viewSetup.classList.add('hidden');
+            els.viewMain.classList.remove('hidden');
+            updateUI();
+        }
+
+        function renderHistory() {
+            els.historyList.innerHTML = '';
+            
+            if (state.transactions.length === 0) {
+                els.historyList.innerHTML = `<div class="text-center text-gray-400 font-bold mt-8">No transactions yet!</div>`;
+                return;
+            }
+
+            // Sort newest first
+            const sorted = [...state.transactions].sort((a, b) => b.id - a.id);
+
+            sorted.forEach(tx => {
+                const isSpend = tx.type === 'spend';
+                const div = document.createElement('div');
+                div.className = "bg-white p-3 rounded-2xl toy-border toy-shadow-sm flex justify-between items-center";
+                
+                div.innerHTML = `
+                    <div class="flex-1 overflow-hidden">
+                        <div class="font-black text-lg ${isSpend ? 'text-pink-500' : 'text-green-500'}">
+                            ${isSpend ? '-' : '+'}$${tx.amount.toFixed(2)}
+                        </div>
+                        <div class="text-sm font-bold text-gray-500 truncate">${tx.desc || (isSpend ? 'Spent' : 'Received')}</div>
+                    </div>
+                    <button class="bg-gray-100 hover:bg-red-100 text-red-500 font-bold p-2 rounded-xl border-2 border-transparent hover:border-red-500 transition-colors shrink-0 delete-btn" data-id="${tx.id}">
+                        🗑️
+                    </button>
+                `;
+                els.historyList.appendChild(div);
+            });
+
+            // Attach delete listeners
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = parseInt(e.currentTarget.getAttribute('data-id'));
+                    deleteTransaction(id);
+                });
+            });
+        }
+
+        // --- Actions ---
+        els.btnStart.addEventListener('click', () => {
+            const val = parseFloat(els.setupInput.value);
+            if (isNaN(val) || val <= 0) {
+                showError(els.setupError);
+                return;
+            }
+            state.budget = val;
+            state.balance = val; // Day 1 balance
+            state.lastLogin = new Date().toISOString();
+            saveData();
+            showMainView();
+        });
+
+        function handleTransaction(type) {
+            const amount = parseFloat(els.txAmount.value);
+            if (isNaN(amount) || amount <= 0) {
+                showError(els.txError);
+                return;
+            }
+
+            const desc = els.txDesc.value.trim();
+            
+            if (type === 'spend') {
+                state.balance -= amount;
+            } else {
+                state.balance += amount;
+            }
+
+            state.transactions.push({
+                id: Date.now(),
+                amount: amount,
+                type: type,
+                desc: desc,
+                date: new Date().toISOString()
+            });
+
+            // Clear inputs
+            els.txAmount.value = '';
+            els.txDesc.value = '';
+            els.txAmount.blur(); // Hide keyboard
+            els.txDesc.blur();
+
+            saveData();
+            updateUI();
+        }
+
+        els.btnSpend.addEventListener('click', () => handleTransaction('spend'));
+        els.btnGet.addEventListener('click', () => handleTransaction('get'));
+
+        function deleteTransaction(id) {
+            const txIndex = state.transactions.findIndex(t => t.id === id);
+            if (txIndex === -1) return;
+            
+            const tx = state.transactions[txIndex];
+            
+            // Reverse math
+            if (tx.type === 'spend') {
+                state.balance += tx.amount;
+            } else {
+                state.balance -= tx.amount;
+            }
+            
+            state.transactions.splice(txIndex, 1);
+            saveData();
+            updateUI();
+        }
+
+        els.btnReset.addEventListener('click', () => {
+            if(confirm("Payday! This will clear history and reset your balance to your daily budget amount. Continue?")) {
+                state.balance = state.budget;
+                state.transactions = [];
+                state.lastLogin = new Date().toISOString();
+                saveData();
+                updateUI();
+            }
+        });
+
+        // --- Drawer Toggle ---
+        let drawerOpen = false;
+        els.drawerHeader.addEventListener('click', () => {
+            drawerOpen = !drawerOpen;
+            if (drawerOpen) {
+                els.drawer.classList.remove('drawer-closed');
+                els.drawer.classList.add('drawer-open');
+                els.drawerIcon.style.transform = 'rotate(180deg)';
+            } else {
+                els.drawer.classList.remove('drawer-open');
+                els.drawer.classList.add('drawer-closed');
+                els.drawerIcon.style.transform = 'rotate(0deg)';
+            }
+        });
+
+        // PWA Meta & Manifest Injection
+        const manifest = {
+            "name": "PocketPop",
+            "short_name": "PocketPop",
+            "start_url": ".",
+            "display": "standalone",
+            "background_color": "#e0f2fe",
+            "theme_color": "#ec4899",
+            "icons": [{
+                "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2VjNDg5OSIvPjx0ZXh0IHg9IjUwIiB5PSI2MCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjQwIiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+JjwvdGV4dD48L3N2Zz4=",
+                "sizes": "192x192",
+                "type": "image/svg+xml"
+            }]
+        };
+        const manifestBlob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
+        const manifestURL = URL.createObjectURL(manifestBlob);
+        const link = document.createElement('link');
+        link.rel = 'manifest';
+        link.href = manifestURL;
+        document.head.appendChild(link);
+
+        // Run
+        loadData();
+        lucide.createIcons();
+    </script>
+</body>
+</html>
