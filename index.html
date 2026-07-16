@@ -115,9 +115,9 @@
             <div id="balance-display" class="text-7xl font-black tracking-tighter truncate w-full text-center px-2">
                 $0.00
             </div>
-            <div class="text-sm font-bold text-gray-400 mt-2">
-                +<span id="daily-amount-display">0</span> added daily
-            </div>
+            <button id="btn-edit-budget" class="text-sm font-bold text-gray-500 mt-2 bg-yellow-200 hover:bg-yellow-300 toy-border toy-shadow-sm px-4 py-1.5 rounded-2xl flex items-center gap-1.5 toy-interactive-sm cursor-pointer outline-none">
+                +<span id="daily-amount-display">0</span> added daily <i data-lucide="pencil" class="w-3.5 h-3.5 text-gray-600" stroke-width="3"></i>
+            </button>
         </div>
 
         <!-- Transaction Input Area -->
@@ -168,6 +168,54 @@
         </div>
     </div>
 
+    <!-- SETTINGS MODAL -->
+    <div id="modal-settings" class="fixed inset-0 z-30 bg-black/40 flex items-center justify-center p-6 opacity-0 pointer-events-none transition-opacity duration-200">
+        <div id="settings-modal-content" class="bg-white p-8 rounded-3xl toy-border toy-shadow max-w-sm w-full text-center transform scale-90 transition-all duration-200 relative">
+            
+            <!-- Close button -->
+            <button id="btn-close-settings" class="absolute top-4 right-4 bg-white rounded-full p-1.5 toy-border toy-shadow-sm toy-interactive-sm text-gray-600 hover:text-gray-800">
+                <i data-lucide="x" class="w-5 h-5" stroke-width="3"></i>
+            </button>
+
+            <h2 class="text-3xl font-black text-pink-500 mb-2 tracking-tight">Daily Budget</h2>
+            <p class="text-base font-bold mb-6 text-gray-500 leading-tight">Update your daily allowance added to your balance at midnight.</p>
+            
+            <div class="relative mb-6 w-full">
+                <!-- Speech Bubble Error -->
+                <div id="settings-error" class="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-white toy-border rounded-xl px-4 py-2 text-pink-600 font-bold text-sm z-10 whitespace-nowrap opacity-0 pointer-events-none transition-opacity duration-200">
+                    Amount must be > 0!
+                    <div class="absolute -bottom-[8px] left-1/2 transform -translate-x-1/2 w-3 h-3 bg-white border-b-[3px] border-r-[3px] border-gray-800 rotate-45"></div>
+                </div>
+
+                <div class="relative">
+                    <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-3xl font-black text-gray-300">$</span>
+                    <input type="number" id="settings-input" placeholder="0" class="w-full bg-gray-50 rounded-2xl toy-border toy-shadow-sm text-4xl font-black p-4 pl-12 text-center outline-none focus:bg-white transition-colors" inputmode="decimal">
+                </div>
+            </div>
+            
+            <button id="btn-save-settings" class="w-full bg-green-400 text-white rounded-2xl toy-border toy-shadow toy-interactive text-2xl font-black py-4">
+                Save Changes
+            </button>
+        </div>
+    </div>
+
+    <!-- CONFIRMATION MODAL -->
+    <div id="modal-confirm" class="fixed inset-0 z-30 bg-black/40 flex items-center justify-center p-6 opacity-0 pointer-events-none transition-opacity duration-200">
+        <div id="confirm-modal-content" class="bg-white p-8 rounded-3xl toy-border toy-shadow max-w-sm w-full text-center transform scale-90 transition-all duration-200 relative">
+            <h2 class="text-3xl font-black text-pink-500 mb-2 tracking-tight">Payday Reset?</h2>
+            <p class="text-base font-bold mb-6 text-gray-500 leading-tight">This will clear your transaction history and reset your balance to your daily budget. Continue?</p>
+            
+            <div class="flex gap-4">
+                <button id="btn-confirm-cancel" class="flex-1 bg-gray-200 text-gray-800 rounded-2xl toy-border toy-shadow-sm toy-interactive-sm text-lg font-black py-3">
+                    Cancel
+                </button>
+                <button id="btn-confirm-yes" class="flex-1 bg-pink-500 text-white rounded-2xl toy-border toy-shadow toy-interactive text-lg font-black py-3">
+                    Reset
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // --- State Management ---
         let state = {
@@ -201,7 +249,22 @@
             drawer: document.getElementById('history-drawer'),
             drawerHeader: document.getElementById('drawer-header'),
             drawerIcon: document.getElementById('drawer-icon'),
-            historyList: document.getElementById('history-list')
+            historyList: document.getElementById('history-list'),
+
+            // Settings Modal
+            btnEditBudget: document.getElementById('btn-edit-budget'),
+            modalSettings: document.getElementById('modal-settings'),
+            modalSettingsContent: document.getElementById('settings-modal-content'),
+            settingsInput: document.getElementById('settings-input'),
+            settingsError: document.getElementById('settings-error'),
+            btnSaveSettings: document.getElementById('btn-save-settings'),
+            btnCloseSettings: document.getElementById('btn-close-settings'),
+
+            // Confirmation Modal
+            modalConfirm: document.getElementById('modal-confirm'),
+            modalConfirmContent: document.getElementById('confirm-modal-content'),
+            btnConfirmCancel: document.getElementById('btn-confirm-cancel'),
+            btnConfirmYes: document.getElementById('btn-confirm-yes')
         };
 
         // --- Utility: Speech Bubble Errors ---
@@ -378,13 +441,74 @@
             updateUI();
         }
 
-        els.btnReset.addEventListener('click', () => {
-            if(confirm("Payday! This will clear history and reset your balance to your daily budget amount. Continue?")) {
-                state.balance = state.budget;
-                state.transactions = [];
-                state.lastLogin = new Date().toISOString();
-                saveData();
-                updateUI();
+        // --- Confirmation Modal Actions ---
+        function openConfirm() {
+            els.modalConfirm.classList.remove('opacity-0', 'pointer-events-none');
+            els.modalConfirmContent.classList.remove('scale-90');
+            els.modalConfirmContent.classList.add('scale-100');
+        }
+
+        function closeConfirm() {
+            els.modalConfirm.classList.add('opacity-0', 'pointer-events-none');
+            els.modalConfirmContent.classList.remove('scale-100');
+            els.modalConfirmContent.classList.add('scale-90');
+        }
+
+        els.btnReset.addEventListener('click', openConfirm);
+        els.btnConfirmCancel.addEventListener('click', closeConfirm);
+        els.modalConfirm.addEventListener('click', (e) => {
+            if (e.target === els.modalConfirm) {
+                closeConfirm();
+            }
+        });
+
+        els.btnConfirmYes.addEventListener('click', () => {
+            state.balance = state.budget;
+            state.transactions = [];
+            state.lastLogin = new Date().toISOString();
+            saveData();
+            updateUI();
+            closeConfirm();
+        });
+
+        // --- Settings Modal Actions ---
+        function openSettings() {
+            els.settingsInput.value = state.budget;
+            els.modalSettings.classList.remove('opacity-0', 'pointer-events-none');
+            els.modalSettingsContent.classList.remove('scale-90');
+            els.modalSettingsContent.classList.add('scale-100');
+        }
+
+        function closeSettings() {
+            els.modalSettings.classList.add('opacity-0', 'pointer-events-none');
+            els.modalSettingsContent.classList.remove('scale-100');
+            els.modalSettingsContent.classList.add('scale-90');
+        }
+
+        els.btnEditBudget.addEventListener('click', openSettings);
+        els.btnCloseSettings.addEventListener('click', closeSettings);
+        els.modalSettings.addEventListener('click', (e) => {
+            if (e.target === els.modalSettings) {
+                closeSettings();
+            }
+        });
+
+        els.btnSaveSettings.addEventListener('click', () => {
+            const val = parseFloat(els.settingsInput.value);
+            if (isNaN(val) || val <= 0) {
+                showError(els.settingsError);
+                return;
+            }
+            state.budget = val;
+            saveData();
+            updateUI();
+            closeSettings();
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeSettings();
+                closeConfirm();
             }
         });
 
