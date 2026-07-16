@@ -35,6 +35,12 @@ Here is a look at PocketPop in action:
 
 ## 🚀 Getting Started
 
+### Option 1: Live Web App & PWA (Recommended)
+You can access the live application directly in your browser:
+* Visit the site: [dillontkh.github.io/pocketpop](https://dillontkh.github.io/pocketpop/)
+* **Install as a PWA:** On mobile or desktop, click **Add to Home Screen** or **Install** from your browser settings/address bar to run PocketPop as a standalone offline application.
+
+### Option 2: Run Locally
 Since PocketPop is fully static, there is no build step required. You can run it locally in seconds:
 
 1. Clone the repository:
