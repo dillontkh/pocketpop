@@ -2,7 +2,7 @@
   "name": "PocketPop",
   "short_name": "PocketPop",
   "description": "Set and manage your daily budget with a fun, responsive interface.",
-  "start_url": "./pocketpop.html",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#e0f2fe",
   "theme_color": "#ec4899",

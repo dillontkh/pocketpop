@@ -1,7 +1,7 @@
 const CACHE_NAME = 'pocketpop-cache-v1';
 const ASSETS = [
   './',
-  './pocketpop.html',
+  './index.html',
   './manifest.json',
   './icon.svg',
   'https://cdn.tailwindcss.com',
