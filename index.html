@@ -574,6 +574,25 @@
         // Run
         loadData();
         lucide.createIcons();
+
+        // Auto-update balance when app returns to foreground or gets focus (e.g., resumed on mobile)
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                processRollovers();
+                updateUI();
+            }
+        });
+
+        window.addEventListener('focus', () => {
+            processRollovers();
+            updateUI();
+        });
+
+        // Periodic check every 10 minutes in case the app remains continuously active on screen
+        setInterval(() => {
+            processRollovers();
+            updateUI();
+        }, 10 * 60 * 1000);
     </script>
 </body>
 </html>
