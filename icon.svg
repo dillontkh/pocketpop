@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <rect width="100" height="100" rx="24" fill="#ec4899"/>
   <!-- Vertical bar of dollar sign -->
-  <path d="M 50,16 L 50,84" stroke="white" stroke-width="12" stroke-linecap="round" />
-  <!-- S-curve of dollar sign -->
-  <path d="M 68,34 C 68,22 32,22 32,38 C 32,54 68,46 68,62 C 68,78 32,78 32,66" stroke="white" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+  <path d="M 50,8 L 50,92" stroke="white" stroke-width="12" stroke-linecap="round" />
+  <!-- Geometric S-curve of dollar sign -->
+  <path d="M 70,20 H 40 a 14,14 0 0 0 0 28 h 20 a 14,14 0 0 1 0 28 H 26" stroke="white" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none" />
 </svg>
