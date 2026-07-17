@@ -102,11 +102,14 @@
     <div id="view-main" class="flex-1 flex flex-col h-full relative hidden">
         
         <!-- Header -->
-        <header class="relative z-10 flex justify-between items-center p-4 pt-6 shrink-0">
+        <header class="relative z-10 flex justify-between items-start p-4 pt-6 shrink-0">
             <h1 class="text-2xl font-black text-pink-500 tracking-tight">PocketPop</h1>
-            <button id="btn-reset" class="bg-white rounded-full px-4 py-2 text-sm font-bold toy-border toy-shadow-sm toy-interactive-sm text-gray-600 flex items-center gap-1.5">
-                <i data-lucide="rotate-ccw" class="w-4 h-4" stroke-width="3"></i> Payday Reset
-            </button>
+            <div class="flex flex-col items-end gap-1">
+                <button id="btn-reset" class="bg-white rounded-full px-4 py-2 text-sm font-bold toy-border toy-shadow-sm toy-interactive-sm text-gray-600 flex items-center gap-1.5">
+                    <i data-lucide="rotate-ccw" class="w-4 h-4" stroke-width="3"></i> Payday Reset
+                </button>
+                <div id="reset-date-display" class="text-[10px] font-bold text-gray-400 mr-1.5"></div>
+            </div>
         </header>
 
         <!-- Balance Display -->
@@ -222,6 +225,7 @@
             budget: 0,
             balance: 0,
             lastLogin: null,
+            lastReset: null,
             transactions: [] // { id, amount, type ('spend'|'get'), desc, date }
         };
 
@@ -239,6 +243,7 @@
             balanceDisplay: document.getElementById('balance-display'),
             dailyDisplay: document.getElementById('daily-amount-display'),
             btnReset: document.getElementById('btn-reset'),
+            resetDateDisplay: document.getElementById('reset-date-display'),
             
             txAmount: document.getElementById('tx-amount'),
             txDesc: document.getElementById('tx-desc'),
@@ -280,6 +285,13 @@
             const data = localStorage.getItem(STORAGE_KEY);
             if (data) {
                 state = JSON.parse(data);
+                
+                // Migrate legacy states to include lastReset
+                if (!state.lastReset) {
+                    state.lastReset = state.lastLogin || new Date().toISOString();
+                    saveData();
+                }
+                
                 processRollovers();
                 showMainView();
             } else {
@@ -289,6 +301,30 @@
 
         function saveData() {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        }
+
+        function formatLastReset(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return '';
+            
+            const now = new Date();
+            // Normalize to midnight to calculate pure days passed
+            const dateMidnight = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+            const nowMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+            const diffTime = nowMidnight - dateMidnight;
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays === 0) {
+                return 'Reset today';
+            } else if (diffDays === 1) {
+                return 'Reset yesterday';
+            } else if (diffDays < 7) {
+                return `Reset ${diffDays} days ago`;
+            } else {
+                const options = { month: 'short', day: 'numeric' };
+                return `Reset ${date.toLocaleDateString(undefined, options)}`;
+            }
         }
 
         function processRollovers() {
@@ -325,6 +361,12 @@
             }
 
             els.dailyDisplay.innerText = `$${state.budget}`;
+            
+            // Update last reset date indicator
+            if (els.resetDateDisplay) {
+                els.resetDateDisplay.innerText = formatLastReset(state.lastReset);
+            }
+            
             renderHistory();
         }
 
@@ -386,6 +428,7 @@
             state.budget = val;
             state.balance = val; // Day 1 balance
             state.lastLogin = new Date().toISOString();
+            state.lastReset = new Date().toISOString();
             saveData();
             showMainView();
         });
@@ -469,6 +512,7 @@
             state.balance = state.budget;
             state.transactions = [];
             state.lastLogin = new Date().toISOString();
+            state.lastReset = new Date().toISOString();
             saveData();
             updateUI();
             closeConfirm();
