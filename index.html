@@ -509,6 +509,25 @@
         els.btnSpend.addEventListener('click', () => handleTransaction('spend'));
         els.btnGet.addEventListener('click', () => handleTransaction('get'));
 
+        els.txAmount.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const amount = parseFloat(els.txAmount.value);
+                if (isNaN(amount) || amount <= 0) {
+                    showError(els.txError);
+                    return;
+                }
+                els.txDesc.focus();
+            }
+        });
+
+        els.txDesc.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleTransaction('spend');
+            }
+        });
+
         function deleteTransaction(id) {
             const txIndex = state.transactions.findIndex(t => t.id === id);
             if (txIndex === -1) return;
