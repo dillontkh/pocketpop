@@ -136,7 +136,7 @@
             <h1 class="text-2xl font-black text-pink-500 tracking-tight">PocketPop</h1>
             <div class="flex flex-col items-end gap-1">
                 <button id="btn-reset" class="bg-white rounded-full px-4 py-2 text-sm font-bold toy-border toy-shadow-sm toy-interactive-sm text-gray-600 flex items-center gap-1.5">
-                    <i data-lucide="rotate-ccw" class="w-4 h-4" stroke-width="3"></i> Payday Reset
+                    <i data-lucide="rotate-ccw" class="w-4 h-4" stroke-width="3"></i> Reset
                 </button>
                 <div id="reset-date-display" class="text-[10px] font-bold text-gray-400 mr-1.5"></div>
             </div>
@@ -235,7 +235,7 @@
     <!-- CONFIRMATION MODAL -->
     <div id="modal-confirm" class="fixed inset-0 z-30 bg-black/40 flex items-center justify-center p-6 opacity-0 pointer-events-none transition-opacity duration-200">
         <div id="confirm-modal-content" class="bg-white p-8 rounded-3xl toy-border toy-shadow max-w-sm w-full text-center transform scale-90 transition-all duration-200 relative">
-            <h2 class="text-3xl font-black text-pink-500 mb-2 tracking-tight">Payday Reset?</h2>
+            <h2 class="text-3xl font-black text-pink-500 mb-2 tracking-tight">Reset?</h2>
             <p class="text-base font-bold mb-6 text-gray-500 leading-tight">This will clear your transaction history and reset your balance to your daily budget. Continue?</p>
             
             <div class="flex gap-4">
@@ -459,7 +459,7 @@
         }
 
         // --- Actions ---
-        els.btnStart.addEventListener('click', () => {
+        function handleSetupSubmit() {
             const val = parseFloat(els.setupInput.value);
             if (isNaN(val) || val <= 0) {
                 showError(els.setupError);
@@ -471,6 +471,14 @@
             state.lastReset = new Date().toISOString();
             saveData();
             showMainView();
+        }
+
+        els.btnStart.addEventListener('click', handleSetupSubmit);
+        els.setupInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleSetupSubmit();
+            }
         });
 
         function handleTransaction(type) {
@@ -599,7 +607,7 @@
             }
         });
 
-        els.btnSaveSettings.addEventListener('click', () => {
+        function handleSaveSettings() {
             const val = parseFloat(els.settingsInput.value);
             if (isNaN(val) || val <= 0) {
                 showError(els.settingsError);
@@ -609,6 +617,14 @@
             saveData();
             updateUI();
             closeSettings();
+        }
+
+        els.btnSaveSettings.addEventListener('click', handleSaveSettings);
+        els.settingsInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleSaveSettings();
+            }
         });
 
         window.addEventListener('keydown', (e) => {
