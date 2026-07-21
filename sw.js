@@ -62,7 +62,34 @@ self.addEventListener('fetch', event => {
   // Exclude service worker file itself from being intercepted or cached
   if (url.pathname.endsWith('sw.js')) return;
 
-  // Stale-While-Revalidate for local assets (same-origin)
+  const isHtmlNavigation = event.request.mode === 'navigate' ||
+    (event.request.headers.get('accept') && event.request.headers.get('accept').includes('text/html')) ||
+    url.pathname.endsWith('index.html') ||
+    url.pathname === '/' ||
+    url.pathname === '';
+
+  // Network-First strategy for HTML / Navigation requests (ensures immediate updates when online)
+  if (isHtmlNavigation) {
+    event.respondWith(
+      fetch(event.request)
+        .then(networkResponse => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(event.request, responseClone);
+            });
+          }
+          return networkResponse;
+        })
+        .catch(() => {
+          // Offline fallback to cached HTML
+          return caches.match(event.request).then(cached => cached || caches.match('./index.html'));
+        })
+    );
+    return;
+  }
+
+  // Stale-While-Revalidate for other local assets (same-origin)
   if (url.origin === self.location.origin) {
     event.respondWith(
       caches.open(CACHE_NAME).then(cache => {
