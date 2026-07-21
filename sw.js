@@ -1,9 +1,10 @@
-const CACHE_NAME = 'pocketpop-cache-v2.2'; // Increment this version whenever you update assets/UI to force an immediate update toast for users.
+const CACHE_NAME = 'pocketpop-cache-v2.3'; // Increment this version whenever you update assets/UI to force an immediate update toast for users.
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
   './icon.svg',
+  './icon-maskable.svg',
   'https://cdn.tailwindcss.com',
   'https://unpkg.com/lucide@latest',
   'https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700;900&display=swap'

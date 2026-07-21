@@ -67,5 +67,6 @@ Since PocketPop is fully static, there is no build step required. You can run it
 * **`index.html`** - The single-page entry point, styling customization, UI layout, and dashboard behavior.
 * **`sw.js`** - Service worker handling the offline caching strategies (Stale-While-Revalidate for local assets, Cache-First for CDNs).
 * **`manifest.json`** - PWA manifest enabling installations as a standalone mobile application.
-* **`icon.svg`** - Vector icon asset for high-density app shortcuts and browser tabs.
+* **`icon.svg`** - Vector icon asset for high-density app shortcuts, splash screen, and browser tabs.
+* **`icon-maskable.svg`** - Full-bleed maskable vector icon for Android adaptive launcher masks.
 * **`screenshots/`** - Live application screenshots featured in this documentation.
