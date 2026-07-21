@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pocketpop-cache-v2.3'; // Increment this version whenever you update assets/UI to force an immediate update toast for users.
+const CACHE_NAME = 'pocketpop-cache-v2.4'; // Increment this version whenever you update assets/UI to force an immediate update toast for users.
 const ASSETS = [
   './',
   './index.html',

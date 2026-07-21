@@ -3,20 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <!-- Viewport for mobile optimization -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>PocketPop</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700;900&display=swap" rel="stylesheet">
     <link rel="icon" type="image/svg+xml" href="icon.svg">
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#ec4899">
+    <meta name="theme-color" content="#e0f2fe">
     <link rel="apple-touch-icon" href="icon.svg">
     
     <style>
+        html, body {
+            height: 100vh;
+            height: 100dvh;
+            width: 100%;
+            overflow: hidden;
+        }
+
         body {
             font-family: 'Quicksand', sans-serif;
             touch-action: manipulation; /* Prevent double-tap zoom on mobile */
+        }
+
+        /* Safe Area Insets & Responsive Layout */
+        header {
+            padding-top: max(1.5rem, calc(0.75rem + env(safe-area-inset-top, 0px)));
+            padding-left: max(1rem, env(safe-area-inset-left, 0px));
+            padding-right: max(1rem, env(safe-area-inset-right, 0px));
+        }
+
+        #view-setup {
+            padding-top: max(1.5rem, calc(1.5rem + env(safe-area-inset-top, 0px)));
+            padding-bottom: max(1.5rem, calc(1.5rem + env(safe-area-inset-bottom, 0px)));
+            padding-left: max(1.5rem, env(safe-area-inset-left, 0px));
+            padding-right: max(1.5rem, env(safe-area-inset-right, 0px));
+        }
+
+        .tx-input-container {
+            padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+        }
+
+        #update-toast {
+            top: max(1rem, calc(0.5rem + env(safe-area-inset-top, 0px)));
         }
 
         /* Toy Aesthetic Utilities */
@@ -49,16 +78,17 @@
         /* History Drawer Animation */
         #history-drawer {
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
         }
         .drawer-closed {
-            transform: translateY(calc(100% - 4rem)); /* 4rem is the header height */
+            transform: translateY(calc(100% - 4rem - env(safe-area-inset-bottom, 0px))); /* 4rem is the header height */
         }
         .drawer-open {
             transform: translateY(0);
         }
     </style>
 </head>
-<body class="bg-sky-100 h-screen w-screen overflow-hidden flex flex-col relative text-gray-800">
+<body class="bg-sky-100 h-full w-full overflow-hidden flex flex-col relative text-gray-800">
 
     <!-- UPDATE TOAST -->
     <div id="update-toast" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 max-w-sm w-[90%] bg-yellow-300 toy-border toy-shadow rounded-2xl p-4 flex items-center justify-between gap-4 transition-all duration-300 translate-y-[-150%] opacity-0 pointer-events-none">
@@ -102,7 +132,7 @@
     <div id="view-main" class="flex-1 flex flex-col h-full relative hidden">
         
         <!-- Header -->
-        <header class="relative z-10 flex justify-between items-start p-4 pt-6 shrink-0">
+        <header class="relative z-10 flex justify-between items-start p-4 shrink-0">
             <h1 class="text-2xl font-black text-pink-500 tracking-tight">PocketPop</h1>
             <div class="flex flex-col items-end gap-1">
                 <button id="btn-reset" class="bg-white rounded-full px-4 py-2 text-sm font-bold toy-border toy-shadow-sm toy-interactive-sm text-gray-600 flex items-center gap-1.5">
@@ -124,7 +154,7 @@
         </div>
 
         <!-- Transaction Input Area -->
-        <div class="px-4 pb-[5rem] shrink-0"> <!-- Padding bottom accounts for collapsed drawer -->
+        <div class="px-4 tx-input-container shrink-0"> <!-- Padding bottom accounts for collapsed drawer & safe area -->
             <div class="bg-white p-4 rounded-3xl toy-border toy-shadow flex flex-col gap-3">
                 
                 <div class="relative w-full">
