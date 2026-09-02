@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pocketpop-cache-v2.6'; // Increment this version whenever you update assets/UI to force an immediate update toast for users.
+const CACHE_NAME = 'pocketpop-cache-__BUILD_HASH__'; // Automatically stamped with git commit SHA during GitHub Actions deployment.
 const ASSETS = [
   './',
   './index.html',

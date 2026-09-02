@@ -11,7 +11,7 @@ PocketPop is a neubrutalist PWA budget tracker deployed on GitHub Pages.
   * `sw.js`: Excluded from cache.
 * **Update Rules:**
   * HTML updates auto-refresh on load via Network-First strategy.
-  * Increment `CACHE_NAME` version in `sw.js` when modifying static assets or requiring hard cache purge.
+  * `sw.js` uses `__BUILD_HASH__`, stamped automatically with `github.sha` on master push via `.github/workflows/deploy.yml`.
   * `index.html` runs `reg.update()` on load to query new `sw.js`.
   * Service worker calls `skipWaiting()` and `clients.claim()` on activation.
   * Page listens for `controllerchange` event to display `#update-toast` (user-initiated reload).
