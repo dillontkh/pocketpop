@@ -79,3 +79,35 @@ input[type="number"] {
 .drawer-open {
     transform: translateY(0);
 }
+
+/* Drag and Drop Reordering */
+.drag-handle {
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+#settings-categories-list {
+    position: relative;
+    user-select: none;
+}
+
+.category-row {
+    transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.15s ease, background-color 0.15s ease;
+    will-change: transform;
+}
+
+.category-row.is-dragging {
+    position: relative;
+    z-index: 50;
+    box-shadow: 6px 6px 0px 0px #1f2937 !important;
+    background-color: #fef9c3 !important;
+    cursor: grabbing !important;
+    transition: none !important;
+}
+
+.category-row.is-dropping {
+    position: relative;
+    z-index: 40;
+    transition: transform 0.18s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.15s ease, background-color 0.15s ease !important;
+}

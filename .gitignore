@@ -1,2 +1,5 @@
 .agents/
 .playwright-cli/
+node_modules/
+test-results/
+playwright-report/

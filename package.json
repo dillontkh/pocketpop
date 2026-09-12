@@ -1,0 +1,24 @@
+{
+  "name": "pocketpop",
+  "version": "1.0.0",
+  "description": "PocketPop is a playful, mobile-first, neubrutalist PWA (Progressive Web App) budget tracker designed to keep your spending in check with style. **All your data is stored entirely locally in your browser's LocalStorage—ensuring absolute privacy with no logins, no tracking, and no external servers required.** It features a bold toy aesthetic, solid borders, flat drop shadows, and vibrant colors.",
+  "main": "sw.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dillontkh/pocketpop.git"
+  },
+  "keywords": [],
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/dillontkh/pocketpop/issues"
+  },
+  "homepage": "https://github.com/dillontkh/pocketpop#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.63.0"
+  }
+}

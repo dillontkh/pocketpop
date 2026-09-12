@@ -4,6 +4,7 @@ export const STORAGE_KEY = 'pocketpop_data';
 
 export const state = {
     activeCategoryId: null,
+    defaultCategoryId: null, // null / 'last_used' or specific category id
     categories: [] // Array of { id, name, budget, balance, lastLogin, lastReset, transactions }
 };
 
@@ -22,18 +23,25 @@ export function setActiveCategoryId(id) {
     saveData();
 }
 
+export function setDefaultCategoryId(id) {
+    state.defaultCategoryId = id;
+    saveData();
+}
+
 export function loadData() {
     const data = localStorage.getItem(STORAGE_KEY);
     if (data) {
         try {
             const parsed = JSON.parse(data);
             if (Array.isArray(parsed.categories) && parsed.categories.length > 0) {
-                state.activeCategoryId = parsed.activeCategoryId;
                 state.categories = parsed.categories;
+                state.defaultCategoryId = parsed.defaultCategoryId || null;
+                state.activeCategoryId = parsed.activeCategoryId;
             } else if (parsed.budget !== undefined) {
                 // Migrate legacy single-category state
                 const legacyCatId = 'cat_' + Date.now();
                 state.activeCategoryId = legacyCatId;
+                state.defaultCategoryId = null;
                 state.categories = [{
                     id: legacyCatId,
                     name: 'General',
@@ -54,7 +62,10 @@ export function loadData() {
                 if (!Array.isArray(cat.transactions)) cat.transactions = [];
             });
 
-            if (!state.activeCategoryId || !state.categories.find(c => c.id === state.activeCategoryId)) {
+            // If default category is set and valid, open to it on startup
+            if (state.defaultCategoryId && state.defaultCategoryId !== 'last_used' && state.categories.some(c => c.id === state.defaultCategoryId)) {
+                state.activeCategoryId = state.defaultCategoryId;
+            } else if (!state.activeCategoryId || !state.categories.find(c => c.id === state.activeCategoryId)) {
                 state.activeCategoryId = state.categories[0].id;
             }
 
@@ -76,6 +87,7 @@ export function initSetupCategory(name, budget) {
     const now = new Date().toISOString();
 
     state.activeCategoryId = catId;
+    state.defaultCategoryId = null;
     state.categories = [{
         id: catId,
         name: name,
@@ -109,14 +121,20 @@ export function createCategory(name, budget) {
     return newCat;
 }
 
+export function updateCategory(catId, name, budget) {
+    const cat = state.categories.find(c => c.id === catId);
+    if (!cat) return null;
+
+    cat.name = name;
+    cat.budget = budget;
+    saveData();
+    return cat;
+}
+
 export function updateActiveCategory(name, budget) {
     const activeCat = getActiveCategory();
     if (!activeCat) return null;
-
-    activeCat.name = name;
-    activeCat.budget = budget;
-    saveData();
-    return activeCat;
+    return updateCategory(activeCat.id, name, budget);
 }
 
 export function deleteCategory(catId) {
@@ -125,6 +143,9 @@ export function deleteCategory(catId) {
         state.categories.splice(idx, 1);
         if (state.activeCategoryId === catId) {
             state.activeCategoryId = state.categories[0].id;
+        }
+        if (state.defaultCategoryId === catId) {
+            state.defaultCategoryId = null;
         }
         saveData();
         return true;

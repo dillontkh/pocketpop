@@ -72,9 +72,14 @@
         <header class="relative z-10 flex justify-between items-start p-4 pb-2 shrink-0">
             <h1 class="text-2xl font-black text-pink-500 tracking-tight">PocketPop</h1>
             <div class="flex flex-col items-end gap-1">
-                <button id="btn-reset" class="bg-white rounded-full px-4 py-2 text-sm font-bold toy-border toy-shadow-sm toy-interactive-sm text-gray-600 flex items-center gap-1.5">
-                    <i data-lucide="rotate-ccw" class="w-4 h-4" stroke-width="3"></i> Reset
-                </button>
+                <div class="flex items-center gap-2">
+                    <button id="btn-reset" class="bg-white rounded-full px-3.5 py-2 text-sm font-bold toy-border toy-shadow-sm toy-interactive-sm text-gray-600 flex items-center gap-1.5">
+                        <i data-lucide="rotate-ccw" class="w-4 h-4" stroke-width="3"></i> Reset
+                    </button>
+                    <button id="btn-settings" title="Settings" aria-label="Settings" class="bg-white rounded-full p-2 text-sm font-bold toy-border toy-shadow-sm toy-interactive-sm text-gray-600 flex items-center justify-center">
+                        <i data-lucide="settings" class="w-4 h-4" stroke-width="3"></i>
+                    </button>
+                </div>
                 <div id="reset-date-display" class="text-[10px] font-bold text-gray-400 mr-1.5"></div>
             </div>
         </header>
@@ -92,10 +97,7 @@
         </div>
 
         <!-- Balance Display -->
-        <div class="flex-1 flex flex-col items-center justify-center px-4 -mt-4 shrink-0 relative">
-            <button id="btn-edit-category" title="Edit Category" aria-label="Edit Category" class="absolute top-7 right-4 bg-yellow-200 hover:bg-yellow-300 text-gray-700 rounded-full w-9 h-9 toy-border toy-shadow-sm toy-interactive-sm flex items-center justify-center cursor-pointer outline-none">
-                <i data-lucide="pencil" class="w-4 h-4 text-gray-700" stroke-width="2.5"></i>
-            </button>
+        <div class="flex-1 flex flex-col items-center justify-center px-4 -mt-4 shrink-0">
             <h2 class="text-lg font-bold text-gray-500 uppercase tracking-widest mb-2">Available Budget</h2>
             <div id="balance-display" class="text-7xl font-black tracking-tighter truncate w-full text-center px-2">
                 $0.00
@@ -192,45 +194,74 @@
         </div>
     </div>
 
-    <!-- SETTINGS MODAL (Category Settings) -->
-    <div id="modal-settings" class="fixed inset-0 z-30 bg-black/40 flex items-center justify-center p-6 opacity-0 pointer-events-none transition-opacity duration-200">
-        <div id="settings-modal-content" class="bg-white p-8 rounded-3xl toy-border toy-shadow max-w-sm w-full text-center transform scale-90 transition-all duration-200 relative">
+    <!-- SETTINGS MODAL (Consolidated Options) -->
+    <div id="modal-settings" class="fixed inset-0 z-30 bg-black/40 flex items-center justify-center p-4 sm:p-6 opacity-0 pointer-events-none transition-opacity duration-200">
+        <div id="settings-modal-content" class="bg-white p-5 sm:p-7 rounded-3xl toy-border toy-shadow max-w-md w-full max-h-[90vh] overflow-y-auto text-center transform scale-90 transition-all duration-200 relative">
             
             <!-- Close button -->
             <button id="btn-close-settings" class="absolute top-4 right-4 bg-white rounded-full p-1.5 toy-border toy-shadow-sm toy-interactive-sm text-gray-600 hover:text-gray-800">
                 <i data-lucide="x" class="w-5 h-5" stroke-width="3"></i>
             </button>
 
-            <h2 class="text-3xl font-black text-pink-500 mb-2 tracking-tight">Edit Category</h2>
-            <p class="text-sm font-bold mb-6 text-gray-500 leading-tight">Update name and daily budget for this category.</p>
+            <h2 class="text-3xl font-black text-pink-500 mb-1 tracking-tight">Settings</h2>
+            <p class="text-xs font-bold mb-5 text-gray-500 leading-tight">Preferences & category management</p>
             
-            <div class="flex flex-col gap-4 mb-6 text-left relative">
-                <!-- Speech Bubble Error -->
-                <div id="settings-error" class="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-white toy-border rounded-xl px-4 py-2 text-pink-600 font-bold text-sm z-30 whitespace-nowrap opacity-0 pointer-events-none transition-opacity duration-200 shadow-md">
+            <!-- Speech Bubble Error -->
+            <div class="relative w-full">
+                <div id="settings-error" class="absolute -top-7 left-1/2 transform -translate-x-1/2 bg-white toy-border rounded-xl px-4 py-2 text-pink-600 font-bold text-sm z-30 whitespace-nowrap opacity-0 pointer-events-none transition-opacity duration-200 shadow-md">
                     <span id="settings-error-msg">Amount must be > 0!</span>
                     <div class="absolute -bottom-[8px] left-1/2 transform -translate-x-1/2 w-3 h-3 bg-white border-b-[3px] border-r-[3px] border-gray-800 rotate-45"></div>
                 </div>
+            </div>
 
-                <div class="relative">
-                    <label for="settings-cat-name" class="block text-xs font-black uppercase text-gray-400 mb-1 ml-1">Category Name</label>
-                    <input type="text" id="settings-cat-name" placeholder="Category Name" maxlength="20" class="w-full bg-gray-50 rounded-2xl toy-border toy-shadow-sm text-lg font-black p-3.5 px-4 outline-none focus:bg-white transition-colors">
+            <!-- Settings Sections -->
+            <div class="flex flex-col gap-4 mb-6 text-left">
+                
+                <!-- SECTION 1: Default Category on Open -->
+                <div class="bg-sky-50 p-3.5 rounded-2xl border-2 border-gray-800">
+                    <label for="settings-default-category" class="block text-xs font-black uppercase text-gray-500 mb-1.5">
+                        Default Category on Launch
+                    </label>
+                    <div class="relative">
+                        <select id="settings-default-category" class="w-full bg-white rounded-xl toy-border toy-shadow-sm text-sm font-black p-2.5 outline-none cursor-pointer">
+                            <!-- Populated dynamically with 'Last Used' + category options -->
+                        </select>
+                    </div>
+                    <p class="text-[11px] font-bold text-gray-400 mt-1.5 leading-snug">
+                        Which category tab to open when PocketPop launches.
+                    </p>
                 </div>
 
-                <div class="relative">
-                    <label for="settings-input" class="block text-xs font-black uppercase text-gray-400 mb-1 ml-1">Daily Budget</label>
-                    <div class="relative">
-                        <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-2xl font-black text-gray-300">$</span>
-                        <input type="number" id="settings-input" placeholder="0" class="w-full bg-gray-50 rounded-2xl toy-border toy-shadow-sm text-3xl font-black p-3 pl-11 text-center outline-none focus:bg-white transition-colors" inputmode="decimal">
+                <!-- SECTION 2: Categories List -->
+                <div class="bg-yellow-50 p-3.5 rounded-2xl border-2 border-gray-800 flex flex-col gap-2.5">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-xs font-black uppercase text-gray-500">
+                            Categories
+                        </label>
+                        <span class="text-[10px] font-bold text-gray-400">
+                            Drag handle to reorder
+                        </span>
+                    </div>
+
+                    <!-- Column Headers -->
+                    <div class="flex items-center gap-2 px-1 text-[10px] font-black uppercase text-gray-400 select-none">
+                        <span class="w-6 shrink-0 text-center">⇅</span>
+                        <span class="flex-1">Category Name</span>
+                        <span class="w-24 text-center">Daily Budget</span>
+                        <span class="w-7 shrink-0"></span>
+                    </div>
+
+                    <!-- Draggable Category List -->
+                    <div id="settings-categories-list" class="flex flex-col gap-2">
+                        <!-- Category rows rendered dynamically -->
                     </div>
                 </div>
+
             </div>
             
             <div class="flex flex-col gap-3">
-                <button id="btn-save-settings" class="w-full bg-green-400 text-white rounded-2xl toy-border toy-shadow toy-interactive text-2xl font-black py-4">
-                    Save Changes
-                </button>
-                <button id="btn-delete-category" class="w-full bg-white text-pink-500 border-2 border-pink-400 hover:bg-pink-50 rounded-2xl toy-shadow-sm toy-interactive-sm text-sm font-black py-2.5 flex items-center justify-center gap-1.5">
-                    <i data-lucide="trash-2" class="w-4 h-4"></i> Delete Category
+                <button id="btn-save-settings" class="w-full bg-green-400 hover:bg-green-300 text-white rounded-2xl toy-border toy-shadow toy-interactive text-xl font-black py-3.5">
+                    Save Settings
                 </button>
             </div>
         </div>

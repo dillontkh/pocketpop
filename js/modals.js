@@ -4,8 +4,10 @@ import {
     getActiveCategory,
     initSetupCategory,
     createCategory,
+    updateCategory,
     updateActiveCategory,
     deleteCategory,
+    setDefaultCategoryId,
     resetActiveCategory
 } from './state.js';
 import { els, updateUI, showMainView, setOnTabDeleteCallback } from './ui.js';
@@ -83,24 +85,288 @@ export function handleCreateCategory() {
     updateUI();
 }
 
+function escapeHtml(str) {
+    return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+function syncDefaultCategoryDropdown() {
+    if (!els.settingsDefaultCategory) return;
+    const currentVal = els.settingsDefaultCategory.value;
+    els.settingsDefaultCategory.innerHTML = '';
+
+    const lastUsedOpt = document.createElement('option');
+    lastUsedOpt.value = 'last_used';
+    lastUsedOpt.textContent = 'Last Used (Remember previous)';
+    els.settingsDefaultCategory.appendChild(lastUsedOpt);
+
+    const rows = els.settingsCategoriesList ? els.settingsCategoriesList.querySelectorAll('.category-row') : [];
+    if (rows.length > 0) {
+        rows.forEach(row => {
+            const id = row.dataset.id;
+            const nameInput = row.querySelector('.cat-name-input');
+            const name = nameInput ? nameInput.value.trim() : '';
+            const opt = document.createElement('option');
+            opt.value = id;
+            opt.textContent = name || 'Untitled';
+            els.settingsDefaultCategory.appendChild(opt);
+        });
+    } else {
+        state.categories.forEach(cat => {
+            const opt = document.createElement('option');
+            opt.value = cat.id;
+            opt.textContent = cat.name;
+            els.settingsDefaultCategory.appendChild(opt);
+        });
+    }
+
+    if (currentVal && els.settingsDefaultCategory.querySelector(`option[value="${currentVal}"]`)) {
+        els.settingsDefaultCategory.value = currentVal;
+    } else if (state.defaultCategoryId && state.categories.some(c => c.id === state.defaultCategoryId)) {
+        els.settingsDefaultCategory.value = state.defaultCategoryId;
+    } else {
+        els.settingsDefaultCategory.value = 'last_used';
+    }
+}
+
+function renderSettingsCategories() {
+    if (!els.settingsCategoriesList) return;
+    els.settingsCategoriesList.innerHTML = '';
+
+    state.categories.forEach(cat => {
+        const row = document.createElement('div');
+        row.className = 'category-row bg-white p-2 sm:p-2.5 rounded-2xl toy-border toy-shadow-sm flex items-center gap-2 transition-all';
+        row.dataset.id = cat.id;
+
+        row.innerHTML = `
+            <div class="drag-handle cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-700 p-1 flex items-center justify-center select-none touch-none shrink-0" title="Drag to reorder">
+                <i data-lucide="grip-vertical" class="w-4 h-4" stroke-width="2.5"></i>
+            </div>
+            <input type="text" class="cat-name-input flex-1 min-w-0 bg-gray-50 focus:bg-white rounded-xl border-2 border-gray-200 focus:border-gray-800 text-sm font-black p-2 sm:p-2.5 outline-none transition-colors" placeholder="Name" value="${escapeHtml(cat.name)}" maxlength="20">
+            <div class="relative w-20 sm:w-24 shrink-0">
+                <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs sm:text-sm font-black text-gray-300">$</span>
+                <input type="number" class="cat-budget-input w-full bg-gray-50 focus:bg-white rounded-xl border-2 border-gray-200 focus:border-gray-800 text-sm font-black p-2 sm:p-2.5 pl-5 sm:pl-6 text-center outline-none transition-colors" placeholder="0" value="${cat.budget}" inputmode="decimal">
+            </div>
+            ${state.categories.length > 1 ? `
+                <button type="button" class="btn-delete-row text-gray-400 hover:text-pink-500 hover:bg-pink-50 p-1.5 rounded-xl transition-colors shrink-0" title="Delete category" data-id="${cat.id}">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+            ` : `<span class="w-7 shrink-0"></span>`}
+        `;
+
+        // Real-time sync of category name with default category dropdown
+        const nameInput = row.querySelector('.cat-name-input');
+        nameInput.addEventListener('input', () => {
+            if (els.settingsDefaultCategory) {
+                const opt = els.settingsDefaultCategory.querySelector(`option[value="${cat.id}"]`);
+                if (opt) opt.textContent = nameInput.value || 'Untitled';
+            }
+        });
+
+        // Enter key moves from name input to budget input
+        const budgetInput = row.querySelector('.cat-budget-input');
+        nameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                budgetInput.focus();
+            }
+        });
+
+        budgetInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleSaveSettings();
+            }
+        });
+
+        // Delete button
+        const deleteBtn = row.querySelector('.btn-delete-row');
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', () => {
+                closeSettings();
+                openConfirm('delete', cat.id);
+            });
+        }
+
+        els.settingsCategoriesList.appendChild(row);
+    });
+
+    if (window.lucide) {
+        window.lucide.createIcons();
+    }
+}
+
+let dragDropInitialized = false;
+
+function initDragDrop() {
+    if (dragDropInitialized || !els.settingsCategoriesList) return;
+    dragDropInitialized = true;
+
+    const container = els.settingsCategoriesList;
+    let draggedItem = null;
+
+    container.addEventListener('pointerdown', (e) => {
+        const handle = e.target.closest('.drag-handle');
+        if (!handle) return;
+
+        const row = handle.closest('.category-row');
+        if (!row) return;
+
+        e.preventDefault();
+        draggedItem = row;
+
+        try {
+            handle.setPointerCapture(e.pointerId);
+        } catch (_) {}
+
+        let startPointerY = e.clientY;
+        const initialRowRect = draggedItem.getBoundingClientRect();
+        let initialRowTop = initialRowRect.top;
+        const itemHeight = initialRowRect.height;
+        const section = container.closest('.bg-yellow-50') || container;
+
+        // Lift card off the screen
+        draggedItem.classList.remove('is-dropping');
+        draggedItem.classList.add('is-dragging');
+        draggedItem.style.transform = 'translateY(0px) scale(1.03) rotate(-1.2deg)';
+
+        function onPointerMove(moveEvent) {
+            if (!draggedItem) return;
+            moveEvent.preventDefault();
+
+            // Clamp deltaY within bounds (never cover column headers above container)
+            const containerBox = container.getBoundingClientRect();
+            const sectionBox = section.getBoundingClientRect();
+            const rawDeltaY = moveEvent.clientY - startPointerY;
+            const minDeltaY = containerBox.top - 2 - initialRowTop;
+            const maxDeltaY = sectionBox.bottom - 4 - (initialRowTop + itemHeight);
+            const clampedDeltaY = Math.max(minDeltaY, Math.min(maxDeltaY, rawDeltaY));
+
+            draggedItem.style.transform = `translateY(${clampedDeltaY}px) scale(1.03) rotate(-1.2deg)`;
+
+            const currentVisualCenterY = initialRowTop + itemHeight / 2 + clampedDeltaY;
+            const allRows = [...container.querySelectorAll('.category-row')];
+            const siblingRows = allRows.filter(r => r !== draggedItem);
+
+            let afterElement = null;
+            for (const sibling of siblingRows) {
+                // Sibling true layout midpoint (accounting for any active FLIP transform)
+                const style = window.getComputedStyle(sibling);
+                const matrix = new DOMMatrixReadOnly(style.transform);
+                const trueTop = sibling.getBoundingClientRect().top - matrix.m42;
+                const mid = trueTop + sibling.offsetHeight / 2;
+
+                if (currentVisualCenterY < mid) {
+                    afterElement = sibling;
+                    break;
+                }
+            }
+
+            // Check if DOM position would change
+            const currentNextSibling = draggedItem.nextElementSibling;
+            const wouldChange = afterElement ? (currentNextSibling !== afterElement) : (currentNextSibling !== null);
+
+            if (wouldChange) {
+                // FLIP First: record previous tops of all siblings
+                const prevRects = new Map();
+                siblingRows.forEach(r => prevRects.set(r, r.getBoundingClientRect().top));
+
+                const oldDomTop = draggedItem.getBoundingClientRect().top;
+
+                // Move DOM element
+                if (afterElement) {
+                    container.insertBefore(draggedItem, afterElement);
+                } else {
+                    container.appendChild(draggedItem);
+                }
+
+                const newDomTop = draggedItem.getBoundingClientRect().top;
+                const domDelta = newDomTop - oldDomTop;
+
+                // Adjust pointer offsets so the card does not jump under cursor
+                startPointerY += domDelta;
+                initialRowTop += domDelta;
+                const updatedMinDeltaY = containerBox.top - 2 - initialRowTop;
+                const updatedMaxDeltaY = sectionBox.bottom - 4 - (initialRowTop + itemHeight);
+                const updatedDeltaY = moveEvent.clientY - startPointerY;
+                const updatedClampedDeltaY = Math.max(updatedMinDeltaY, Math.min(updatedMaxDeltaY, updatedDeltaY));
+                draggedItem.style.transform = `translateY(${updatedClampedDeltaY}px) scale(1.03) rotate(-1.2deg)`;
+
+                // FLIP Invert & Play for siblings
+                siblingRows.forEach(sibling => {
+                    const prevTop = prevRects.get(sibling);
+                    const newTop = sibling.getBoundingClientRect().top;
+                    const diff = prevTop - newTop;
+
+                    if (diff !== 0) {
+                        sibling.style.transition = 'none';
+                        sibling.style.transform = `translateY(${diff}px)`;
+                        sibling.offsetHeight; // Force reflow
+                        sibling.style.transition = '';
+                        sibling.style.transform = '';
+                    }
+                });
+            }
+        }
+
+        function onPointerUp(upEvent) {
+            window.removeEventListener('pointermove', onPointerMove);
+            window.removeEventListener('pointerup', onPointerUp);
+            window.removeEventListener('pointercancel', onPointerUp);
+            window.removeEventListener('blur', onPointerUp);
+            handle.removeEventListener('lostpointercapture', onPointerUp);
+
+            if (upEvent && upEvent.pointerId) {
+                try {
+                    if (handle.hasPointerCapture && handle.hasPointerCapture(upEvent.pointerId)) {
+                        handle.releasePointerCapture(upEvent.pointerId);
+                    }
+                } catch (_) {}
+            }
+
+            if (!draggedItem) return;
+            const landingItem = draggedItem;
+            draggedItem = null;
+
+            // Landing animation: smoothly drop into place
+            landingItem.classList.remove('is-dragging');
+            landingItem.classList.add('is-dropping');
+            landingItem.style.transform = 'translateY(0px) scale(1) rotate(0deg)';
+
+            setTimeout(() => {
+                landingItem.classList.remove('is-dropping');
+                landingItem.style.transform = '';
+            }, 200);
+
+            syncDefaultCategoryDropdown();
+        }
+
+        window.addEventListener('pointermove', onPointerMove, { passive: false });
+        window.addEventListener('pointerup', onPointerUp);
+        window.addEventListener('pointercancel', onPointerUp);
+        window.addEventListener('blur', onPointerUp);
+        handle.addEventListener('lostpointercapture', onPointerUp);
+    });
+}
+
 // --- Settings Modal ---
 export function openSettings() {
-    const activeCat = getActiveCategory();
-    if (!activeCat) return;
+    if (!state.categories || state.categories.length === 0) return;
 
-    els.settingsCatName.value = activeCat.name;
-    els.settingsInput.value = activeCat.budget;
-
-    // Show/hide delete button depending on category count
-    if (state.categories.length > 1) {
-        els.btnDeleteCategory.classList.remove('hidden');
-    } else {
-        els.btnDeleteCategory.classList.add('hidden');
-    }
+    renderSettingsCategories();
+    initDragDrop();
+    syncDefaultCategoryDropdown();
 
     els.modalSettings.classList.remove('opacity-0', 'pointer-events-none');
     els.modalSettingsContent.classList.remove('scale-90');
     els.modalSettingsContent.classList.add('scale-100');
+
+    if (window.lucide) {
+        window.lucide.createIcons();
+    }
 }
 
 export function closeSettings() {
@@ -110,35 +376,65 @@ export function closeSettings() {
 }
 
 export function handleSaveSettings() {
-    const activeCat = getActiveCategory();
-    if (!activeCat) return;
+    if (!els.settingsCategoriesList) return;
+    const rows = [...els.settingsCategoriesList.querySelectorAll('.category-row')];
+    if (rows.length === 0) return;
 
-    const name = els.settingsCatName.value.trim();
-    const budget = parseFloat(els.settingsInput.value);
+    const rowData = [];
 
-    if (!name) {
-        els.settingsErrorMsg.innerText = 'Enter a category name!';
+    for (const row of rows) {
+        const id = row.dataset.id;
+        const nameInput = row.querySelector('.cat-name-input');
+        const budgetInput = row.querySelector('.cat-budget-input');
+        const name = nameInput.value.trim();
+        const budget = parseFloat(budgetInput.value);
+
+        if (!name) {
+            els.settingsErrorMsg.innerText = 'Enter a category name!';
+            showError(els.settingsError);
+            nameInput.focus();
+            return;
+        }
+
+        if (isNaN(budget) || budget <= 0) {
+            els.settingsErrorMsg.innerText = 'Amount must be > 0!';
+            showError(els.settingsError);
+            budgetInput.focus();
+            return;
+        }
+
+        rowData.push({ id, name, budget });
+    }
+
+    // Check duplicate names
+    const lowerNames = rowData.map(r => r.name.toLowerCase());
+    if (new Set(lowerNames).size !== lowerNames.length) {
+        els.settingsErrorMsg.innerText = 'Category names must be unique!';
         showError(els.settingsError);
-        els.settingsCatName.focus();
         return;
     }
 
-    const duplicate = state.categories.some(c => c.id !== activeCat.id && c.name.toLowerCase() === name.toLowerCase());
-    if (duplicate) {
-        els.settingsErrorMsg.innerText = 'Category already exists!';
-        showError(els.settingsError);
-        els.settingsCatName.focus();
-        return;
+    // Update state.categories with new values and new order
+    const catMap = new Map(state.categories.map(c => [c.id, c]));
+    const newCategories = [];
+    rowData.forEach(({ id, name, budget }) => {
+        const cat = catMap.get(id);
+        if (cat) {
+            cat.name = name;
+            cat.budget = budget;
+            newCategories.push(cat);
+        }
+    });
+    state.categories = newCategories;
+
+    // Save default category
+    if (els.settingsDefaultCategory) {
+        const selectedDefault = els.settingsDefaultCategory.value;
+        setDefaultCategoryId(selectedDefault === 'last_used' ? null : selectedDefault);
+    } else {
+        saveData();
     }
 
-    if (isNaN(budget) || budget <= 0) {
-        els.settingsErrorMsg.innerText = 'Amount must be > 0!';
-        showError(els.settingsError);
-        els.settingsInput.focus();
-        return;
-    }
-
-    updateActiveCategory(name, budget);
     updateUI();
     closeSettings();
 }
@@ -218,35 +514,13 @@ export function initModals() {
     }
 
     // Settings Modal listeners
+    if (els.btnSettings) els.btnSettings.addEventListener('click', openSettings);
     const editBtn = els.btnEditCategory || els.btnEditBudget;
     if (editBtn) editBtn.addEventListener('click', openSettings);
     if (els.btnCloseSettings) els.btnCloseSettings.addEventListener('click', closeSettings);
     if (els.btnSaveSettings) els.btnSaveSettings.addEventListener('click', handleSaveSettings);
-    if (els.settingsCatName) {
-        els.settingsCatName.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                els.settingsInput.focus();
-            }
-        });
-    }
-    if (els.settingsInput) {
-        els.settingsInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                handleSaveSettings();
-            }
-        });
-    }
-    if (els.btnDeleteCategory) {
-        els.btnDeleteCategory.addEventListener('click', () => {
-            const activeCat = getActiveCategory();
-            if (activeCat && state.categories.length > 1) {
-                closeSettings();
-                openConfirm('delete', activeCat.id);
-            }
-        });
-    }
+
+
     if (els.modalSettings) {
         els.modalSettings.addEventListener('click', (e) => {
             if (e.target === els.modalSettings) closeSettings();

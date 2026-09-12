@@ -18,6 +18,7 @@ export const els = {
     balanceDisplay: document.getElementById('balance-display'),
     dailyDisplay: document.getElementById('daily-amount-display'),
     btnReset: document.getElementById('btn-reset'),
+    btnSettings: document.getElementById('btn-settings'),
     resetDateDisplay: document.getElementById('reset-date-display'),
     
     txAmount: document.getElementById('tx-amount'),
@@ -42,16 +43,14 @@ export const els = {
     btnCloseNewCat: document.getElementById('btn-close-new-cat'),
 
     // Settings Modal
-    btnEditCategory: document.getElementById('btn-edit-category') || document.getElementById('btn-edit-budget'),
     modalSettings: document.getElementById('modal-settings'),
     modalSettingsContent: document.getElementById('settings-modal-content'),
-    settingsCatName: document.getElementById('settings-cat-name'),
-    settingsInput: document.getElementById('settings-input'),
+    settingsDefaultCategory: document.getElementById('settings-default-category'),
+    settingsCategoriesList: document.getElementById('settings-categories-list'),
     settingsError: document.getElementById('settings-error'),
     settingsErrorMsg: document.getElementById('settings-error-msg'),
     btnSaveSettings: document.getElementById('btn-save-settings'),
     btnCloseSettings: document.getElementById('btn-close-settings'),
-    btnDeleteCategory: document.getElementById('btn-delete-category'),
 
     // Confirmation Modal
     modalConfirm: document.getElementById('modal-confirm'),
