@@ -75,6 +75,15 @@
             -moz-appearance: textfield;
         }
 
+        /* Hide scrollbars for tab bar */
+        .scrollbar-none::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-none {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
         /* History Drawer Animation */
         #history-drawer {
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -106,19 +115,29 @@
     <!-- ONBOARDING VIEW -->
     <div id="view-setup" class="absolute inset-0 z-20 bg-yellow-300 flex flex-col items-center justify-center p-6 hidden">
         <div class="bg-white p-8 rounded-3xl toy-border toy-shadow max-w-sm w-full text-center">
-            <h1 class="text-4xl font-black text-pink-500 mb-4 tracking-tight">PocketPop!</h1>
-            <p class="text-lg font-bold mb-8 text-gray-600">Set your daily budget. We'll add this amount every midnight!</p>
+            <h1 class="text-4xl font-black text-pink-500 mb-2 tracking-tight">PocketPop!</h1>
+            <p class="text-sm font-bold mb-6 text-gray-600 leading-snug">Name your first category and set its daily budget. We'll add this every midnight!</p>
             
-            <div class="relative mb-6 w-full">
+            <div class="flex flex-col gap-4 mb-6 w-full text-left relative">
                 <!-- Speech Bubble Error -->
-                <div id="setup-error" class="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-white toy-border rounded-xl px-4 py-2 text-pink-600 font-bold text-sm z-10 whitespace-nowrap opacity-0 pointer-events-none transition-opacity duration-200">
-                    Amount must be > 0!
+                <div id="setup-error" class="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-white toy-border rounded-xl px-4 py-2 text-pink-600 font-bold text-sm z-30 whitespace-nowrap opacity-0 pointer-events-none transition-opacity duration-200 shadow-md">
+                    <span id="setup-error-msg">Amount must be > 0!</span>
                     <div class="absolute -bottom-[8px] left-1/2 transform -translate-x-1/2 w-3 h-3 bg-white border-b-[3px] border-r-[3px] border-gray-800 rotate-45"></div>
                 </div>
 
+                <!-- Category Name Input -->
                 <div class="relative">
-                    <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-3xl font-black text-gray-300">$</span>
-                    <input type="number" id="setup-input" placeholder="0" class="w-full bg-gray-50 rounded-2xl toy-border toy-shadow-sm text-4xl font-black p-4 pl-12 text-center outline-none focus:bg-white transition-colors" inputmode="decimal">
+                    <label for="setup-cat-name" class="block text-xs font-black uppercase text-gray-400 mb-1 ml-1">Category Name</label>
+                    <input type="text" id="setup-cat-name" placeholder="e.g. Daily, Food" maxlength="20" class="w-full bg-gray-50 rounded-2xl toy-border toy-shadow-sm text-lg font-black p-3.5 px-4 outline-none focus:bg-white transition-colors">
+                </div>
+
+                <!-- Daily Budget Input -->
+                <div class="relative">
+                    <label for="setup-input" class="block text-xs font-black uppercase text-gray-400 mb-1 ml-1">Daily Budget</label>
+                    <div class="relative">
+                        <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-2xl font-black text-gray-300">$</span>
+                        <input type="number" id="setup-input" placeholder="0" class="w-full bg-gray-50 rounded-2xl toy-border toy-shadow-sm text-3xl font-black p-3 pl-11 text-center outline-none focus:bg-white transition-colors" inputmode="decimal">
+                    </div>
                 </div>
             </div>
             
@@ -132,7 +151,7 @@
     <div id="view-main" class="flex-1 flex flex-col h-full relative hidden">
         
         <!-- Header -->
-        <header class="relative z-10 flex justify-between items-start p-4 shrink-0">
+        <header class="relative z-10 flex justify-between items-start p-4 pb-2 shrink-0">
             <h1 class="text-2xl font-black text-pink-500 tracking-tight">PocketPop</h1>
             <div class="flex flex-col items-end gap-1">
                 <button id="btn-reset" class="bg-white rounded-full px-4 py-2 text-sm font-bold toy-border toy-shadow-sm toy-interactive-sm text-gray-600 flex items-center gap-1.5">
@@ -142,8 +161,20 @@
             </div>
         </header>
 
+        <!-- Category Tab Bar (Browser Tabs Style) -->
+        <div class="px-4 shrink-0 z-10">
+            <div class="border-b-[3px] border-gray-800 flex items-end overflow-x-auto scrollbar-none">
+                <div id="category-tabs-list" class="flex items-end gap-1.5 pb-0 pt-2 shrink-0">
+                    <!-- Category tabs rendered here dynamically -->
+                </div>
+                <button id="btn-add-category" title="New Category" class="bg-green-400 hover:bg-green-300 text-gray-900 rounded-t-xl px-2.5 py-1.5 border-[3px] border-gray-800 border-b-0 toy-interactive-sm font-black text-sm flex items-center justify-center shrink-0 ml-1.5 -mb-[3px] shadow-[1px_-1px_0px_0px_#1f2937]">
+                    <i data-lucide="plus" class="w-4 h-4" stroke-width="3.5"></i>
+                </button>
+            </div>
+        </div>
+
         <!-- Balance Display -->
-        <div class="flex-1 flex flex-col items-center justify-center px-4 -mt-10 shrink-0">
+        <div class="flex-1 flex flex-col items-center justify-center px-4 -mt-4 shrink-0">
             <h2 class="text-lg font-bold text-gray-500 uppercase tracking-widest mb-2">Available Budget</h2>
             <div id="balance-display" class="text-7xl font-black tracking-tighter truncate w-full text-center px-2">
                 $0.00
@@ -201,7 +232,46 @@
         </div>
     </div>
 
-    <!-- SETTINGS MODAL -->
+    <!-- NEW CATEGORY MODAL -->
+    <div id="modal-new-category" class="fixed inset-0 z-30 bg-black/40 flex items-center justify-center p-6 opacity-0 pointer-events-none transition-opacity duration-200">
+        <div id="new-category-modal-content" class="bg-white p-8 rounded-3xl toy-border toy-shadow max-w-sm w-full text-center transform scale-90 transition-all duration-200 relative">
+            
+            <!-- Close button -->
+            <button id="btn-close-new-cat" class="absolute top-4 right-4 bg-white rounded-full p-1.5 toy-border toy-shadow-sm toy-interactive-sm text-gray-600 hover:text-gray-800">
+                <i data-lucide="x" class="w-5 h-5" stroke-width="3"></i>
+            </button>
+
+            <h2 class="text-3xl font-black text-pink-500 mb-2 tracking-tight">New Category</h2>
+            <p class="text-sm font-bold mb-6 text-gray-500 leading-tight">Create a new budget envelope tab.</p>
+            
+            <div class="flex flex-col gap-4 mb-6 text-left relative">
+                <!-- Speech Bubble Error -->
+                <div id="new-cat-error" class="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-white toy-border rounded-xl px-4 py-2 text-pink-600 font-bold text-sm z-30 whitespace-nowrap opacity-0 pointer-events-none transition-opacity duration-200 shadow-md">
+                    <span id="new-cat-error-msg">Amount must be > 0!</span>
+                    <div class="absolute -bottom-[8px] left-1/2 transform -translate-x-1/2 w-3 h-3 bg-white border-b-[3px] border-r-[3px] border-gray-800 rotate-45"></div>
+                </div>
+
+                <div class="relative">
+                    <label for="new-cat-name" class="block text-xs font-black uppercase text-gray-400 mb-1 ml-1">Category Name</label>
+                    <input type="text" id="new-cat-name" placeholder="e.g. Groceries, Fun" maxlength="20" class="w-full bg-gray-50 rounded-2xl toy-border toy-shadow-sm text-lg font-black p-3.5 px-4 outline-none focus:bg-white transition-colors">
+                </div>
+
+                <div class="relative">
+                    <label for="new-cat-budget" class="block text-xs font-black uppercase text-gray-400 mb-1 ml-1">Daily Budget</label>
+                    <div class="relative">
+                        <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-2xl font-black text-gray-300">$</span>
+                        <input type="number" id="new-cat-budget" placeholder="0" class="w-full bg-gray-50 rounded-2xl toy-border toy-shadow-sm text-3xl font-black p-3 pl-11 text-center outline-none focus:bg-white transition-colors" inputmode="decimal">
+                    </div>
+                </div>
+            </div>
+            
+            <button id="btn-create-category" class="w-full bg-green-400 text-white rounded-2xl toy-border toy-shadow toy-interactive text-2xl font-black py-4">
+                Add Category
+            </button>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL (Category Settings) -->
     <div id="modal-settings" class="fixed inset-0 z-30 bg-black/40 flex items-center justify-center p-6 opacity-0 pointer-events-none transition-opacity duration-200">
         <div id="settings-modal-content" class="bg-white p-8 rounded-3xl toy-border toy-shadow max-w-sm w-full text-center transform scale-90 transition-all duration-200 relative">
             
@@ -210,33 +280,46 @@
                 <i data-lucide="x" class="w-5 h-5" stroke-width="3"></i>
             </button>
 
-            <h2 class="text-3xl font-black text-pink-500 mb-2 tracking-tight">Daily Budget</h2>
-            <p class="text-base font-bold mb-6 text-gray-500 leading-tight">Update your daily budget added to your balance at midnight.</p>
+            <h2 class="text-3xl font-black text-pink-500 mb-2 tracking-tight">Edit Category</h2>
+            <p class="text-sm font-bold mb-6 text-gray-500 leading-tight">Update name and daily budget for this category.</p>
             
-            <div class="relative mb-6 w-full">
+            <div class="flex flex-col gap-4 mb-6 text-left relative">
                 <!-- Speech Bubble Error -->
-                <div id="settings-error" class="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-white toy-border rounded-xl px-4 py-2 text-pink-600 font-bold text-sm z-10 whitespace-nowrap opacity-0 pointer-events-none transition-opacity duration-200">
-                    Amount must be > 0!
+                <div id="settings-error" class="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-white toy-border rounded-xl px-4 py-2 text-pink-600 font-bold text-sm z-30 whitespace-nowrap opacity-0 pointer-events-none transition-opacity duration-200 shadow-md">
+                    <span id="settings-error-msg">Amount must be > 0!</span>
                     <div class="absolute -bottom-[8px] left-1/2 transform -translate-x-1/2 w-3 h-3 bg-white border-b-[3px] border-r-[3px] border-gray-800 rotate-45"></div>
                 </div>
 
                 <div class="relative">
-                    <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-3xl font-black text-gray-300">$</span>
-                    <input type="number" id="settings-input" placeholder="0" class="w-full bg-gray-50 rounded-2xl toy-border toy-shadow-sm text-4xl font-black p-4 pl-12 text-center outline-none focus:bg-white transition-colors" inputmode="decimal">
+                    <label for="settings-cat-name" class="block text-xs font-black uppercase text-gray-400 mb-1 ml-1">Category Name</label>
+                    <input type="text" id="settings-cat-name" placeholder="Category Name" maxlength="20" class="w-full bg-gray-50 rounded-2xl toy-border toy-shadow-sm text-lg font-black p-3.5 px-4 outline-none focus:bg-white transition-colors">
+                </div>
+
+                <div class="relative">
+                    <label for="settings-input" class="block text-xs font-black uppercase text-gray-400 mb-1 ml-1">Daily Budget</label>
+                    <div class="relative">
+                        <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-2xl font-black text-gray-300">$</span>
+                        <input type="number" id="settings-input" placeholder="0" class="w-full bg-gray-50 rounded-2xl toy-border toy-shadow-sm text-3xl font-black p-3 pl-11 text-center outline-none focus:bg-white transition-colors" inputmode="decimal">
+                    </div>
                 </div>
             </div>
             
-            <button id="btn-save-settings" class="w-full bg-green-400 text-white rounded-2xl toy-border toy-shadow toy-interactive text-2xl font-black py-4">
-                Save Changes
-            </button>
+            <div class="flex flex-col gap-3">
+                <button id="btn-save-settings" class="w-full bg-green-400 text-white rounded-2xl toy-border toy-shadow toy-interactive text-2xl font-black py-4">
+                    Save Changes
+                </button>
+                <button id="btn-delete-category" class="w-full bg-white text-pink-500 border-2 border-pink-400 hover:bg-pink-50 rounded-2xl toy-shadow-sm toy-interactive-sm text-sm font-black py-2.5 flex items-center justify-center gap-1.5">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i> Delete Category
+                </button>
+            </div>
         </div>
     </div>
 
     <!-- CONFIRMATION MODAL -->
     <div id="modal-confirm" class="fixed inset-0 z-30 bg-black/40 flex items-center justify-center p-6 opacity-0 pointer-events-none transition-opacity duration-200">
         <div id="confirm-modal-content" class="bg-white p-8 rounded-3xl toy-border toy-shadow max-w-sm w-full text-center transform scale-90 transition-all duration-200 relative">
-            <h2 class="text-3xl font-black text-pink-500 mb-2 tracking-tight">Reset?</h2>
-            <p class="text-base font-bold mb-6 text-gray-500 leading-tight">This will clear your transaction history and reset your balance to your daily budget. Continue?</p>
+            <h2 id="confirm-title" class="text-3xl font-black text-pink-500 mb-2 tracking-tight">Reset?</h2>
+            <p id="confirm-message" class="text-base font-bold mb-6 text-gray-500 leading-tight">This will clear your transaction history and reset your balance to your daily budget. Continue?</p>
             
             <div class="flex gap-4">
                 <button id="btn-confirm-cancel" class="flex-1 bg-gray-200 text-gray-800 rounded-2xl toy-border toy-shadow-sm toy-interactive-sm text-lg font-black py-3">
@@ -252,11 +335,8 @@
     <script>
         // --- State Management ---
         let state = {
-            budget: 0,
-            balance: 0,
-            lastLogin: null,
-            lastReset: null,
-            transactions: [] // { id, amount, type ('spend'|'get'), desc, date }
+            activeCategoryId: null,
+            categories: [] // Array of { id, name, budget, balance, lastLogin, lastReset, transactions }
         };
 
         const STORAGE_KEY = 'pocketpop_data';
@@ -266,10 +346,15 @@
             viewSetup: document.getElementById('view-setup'),
             viewMain: document.getElementById('view-main'),
             
+            setupCatName: document.getElementById('setup-cat-name'),
             setupInput: document.getElementById('setup-input'),
             setupError: document.getElementById('setup-error'),
+            setupErrorMsg: document.getElementById('setup-error-msg'),
             btnStart: document.getElementById('btn-start'),
             
+            categoryTabsList: document.getElementById('category-tabs-list'),
+            btnAddCategory: document.getElementById('btn-add-category'),
+
             balanceDisplay: document.getElementById('balance-display'),
             dailyDisplay: document.getElementById('daily-amount-display'),
             btnReset: document.getElementById('btn-reset'),
@@ -286,18 +371,33 @@
             drawerIcon: document.getElementById('drawer-icon'),
             historyList: document.getElementById('history-list'),
 
+            // New Category Modal
+            modalNewCategory: document.getElementById('modal-new-category'),
+            modalNewCategoryContent: document.getElementById('new-category-modal-content'),
+            newCatName: document.getElementById('new-cat-name'),
+            newCatBudget: document.getElementById('new-cat-budget'),
+            newCatError: document.getElementById('new-cat-error'),
+            newCatErrorMsg: document.getElementById('new-cat-error-msg'),
+            btnCreateCategory: document.getElementById('btn-create-category'),
+            btnCloseNewCat: document.getElementById('btn-close-new-cat'),
+
             // Settings Modal
             btnEditBudget: document.getElementById('btn-edit-budget'),
             modalSettings: document.getElementById('modal-settings'),
             modalSettingsContent: document.getElementById('settings-modal-content'),
+            settingsCatName: document.getElementById('settings-cat-name'),
             settingsInput: document.getElementById('settings-input'),
             settingsError: document.getElementById('settings-error'),
+            settingsErrorMsg: document.getElementById('settings-error-msg'),
             btnSaveSettings: document.getElementById('btn-save-settings'),
             btnCloseSettings: document.getElementById('btn-close-settings'),
+            btnDeleteCategory: document.getElementById('btn-delete-category'),
 
             // Confirmation Modal
             modalConfirm: document.getElementById('modal-confirm'),
             modalConfirmContent: document.getElementById('confirm-modal-content'),
+            confirmTitle: document.getElementById('confirm-title'),
+            confirmMessage: document.getElementById('confirm-message'),
             btnConfirmCancel: document.getElementById('btn-confirm-cancel'),
             btnConfirmYes: document.getElementById('btn-confirm-yes')
         };
@@ -310,20 +410,62 @@
             }, 2500);
         }
 
+        // --- Active Category Helper ---
+        function getActiveCategory() {
+            if (!state.categories || state.categories.length === 0) return null;
+            let cat = state.categories.find(c => c.id === state.activeCategoryId);
+            if (!cat) {
+                cat = state.categories[0];
+                state.activeCategoryId = cat.id;
+            }
+            return cat;
+        }
+
         // --- Storage & Bootup ---
         function loadData() {
             const data = localStorage.getItem(STORAGE_KEY);
             if (data) {
-                state = JSON.parse(data);
-                
-                // Migrate legacy states to include lastReset
-                if (!state.lastReset) {
-                    state.lastReset = state.lastLogin || new Date().toISOString();
-                    saveData();
+                try {
+                    const parsed = JSON.parse(data);
+                    if (Array.isArray(parsed.categories) && parsed.categories.length > 0) {
+                        state = parsed;
+                    } else if (parsed.budget !== undefined) {
+                        // Migrate legacy single-category state
+                        const legacyCatId = 'cat_' + Date.now();
+                        state = {
+                            activeCategoryId: legacyCatId,
+                            categories: [{
+                                id: legacyCatId,
+                                name: 'General',
+                                budget: Number(parsed.budget) || 0,
+                                balance: Number(parsed.balance) || 0,
+                                lastLogin: parsed.lastLogin || new Date().toISOString(),
+                                lastReset: parsed.lastReset || parsed.lastLogin || new Date().toISOString(),
+                                transactions: Array.isArray(parsed.transactions) ? parsed.transactions : []
+                            }]
+                        };
+                        saveData();
+                    } else {
+                        els.viewSetup.classList.remove('hidden');
+                        return;
+                    }
+
+                    // Ensure every category has required fields
+                    state.categories.forEach(cat => {
+                        if (!cat.lastReset) cat.lastReset = cat.lastLogin || new Date().toISOString();
+                        if (!Array.isArray(cat.transactions)) cat.transactions = [];
+                    });
+
+                    if (!state.activeCategoryId || !state.categories.find(c => c.id === state.activeCategoryId)) {
+                        state.activeCategoryId = state.categories[0].id;
+                    }
+
+                    processRollovers();
+                    showMainView();
+                } catch (err) {
+                    console.error('Failed to parse storage data:', err);
+                    els.viewSetup.classList.remove('hidden');
                 }
-                
-                processRollovers();
-                showMainView();
             } else {
                 els.viewSetup.classList.remove('hidden');
             }
@@ -378,41 +520,101 @@
         }
 
         function processRollovers() {
-            if (!state.lastLogin) return;
-            
+            if (!state.categories || state.categories.length === 0) return;
+
             const now = new Date();
-            const last = new Date(state.lastLogin);
-            
-            // Normalize to midnight to calculate pure days passed
             const nowMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-            const lastMidnight = new Date(last.getFullYear(), last.getMonth(), last.getDate()).getTime();
-            
-            const daysPassed = Math.floor((nowMidnight - lastMidnight) / (1000 * 60 * 60 * 24));
-            
-            if (daysPassed > 0) {
-                for (let i = 1; i <= daysPassed; i++) {
-                    const txId = lastMidnight + i * (24 * 60 * 60 * 1000);
-                    state.transactions.push({
-                        id: txId,
-                        amount: state.budget,
-                        type: 'get',
-                        desc: 'Daily Budget',
-                        date: new Date(txId).toISOString()
-                    });
+            let anyChanged = false;
+
+            state.categories.forEach(category => {
+                if (!category.lastLogin) return;
+                const last = new Date(category.lastLogin);
+                const lastMidnight = new Date(last.getFullYear(), last.getMonth(), last.getDate()).getTime();
+                const daysPassed = Math.floor((nowMidnight - lastMidnight) / (1000 * 60 * 60 * 24));
+
+                if (daysPassed > 0) {
+                    anyChanged = true;
+                    for (let i = 1; i <= daysPassed; i++) {
+                        const txId = lastMidnight + i * (24 * 60 * 60 * 1000);
+                        category.transactions.push({
+                            id: txId,
+                            amount: category.budget,
+                            type: 'get',
+                            desc: 'Daily Budget',
+                            date: new Date(txId).toISOString()
+                        });
+                    }
+                    category.balance += (category.budget * daysPassed);
+                    category.lastLogin = now.toISOString();
                 }
-                state.balance += (state.budget * daysPassed);
-                state.lastLogin = now.toISOString();
+            });
+
+            if (anyChanged) {
                 saveData();
             }
         }
 
+        function renderCategoryTabs() {
+            if (!els.categoryTabsList) return;
+            els.categoryTabsList.innerHTML = '';
+
+            state.categories.forEach(cat => {
+                const isActive = cat.id === state.activeCategoryId;
+                const tab = document.createElement('div');
+                
+                tab.className = isActive
+                    ? 'category-tab active bg-white text-gray-900 border-[3px] border-gray-800 border-b-white rounded-t-xl px-3.5 py-1.5 font-black text-sm flex items-center gap-2 cursor-pointer shadow-[2px_-2px_0px_0px_#1f2937] relative -mb-[3px] z-10 shrink-0 select-none'
+                    : 'category-tab bg-sky-200/90 hover:bg-sky-200 text-gray-700 border-[3px] border-gray-800 border-b-0 rounded-t-xl px-3 py-1.5 font-bold text-sm flex items-center gap-1.5 cursor-pointer shrink-0 select-none transition-colors -mb-[3px]';
+                
+                tab.dataset.catId = cat.id;
+
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'truncate max-w-[110px]';
+                nameSpan.textContent = cat.name;
+                tab.appendChild(nameSpan);
+
+                // Show close/delete button on tab if more than 1 category
+                if (state.categories.length > 1) {
+                    const closeBtn = document.createElement('button');
+                    closeBtn.className = 'w-4 h-4 rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-gray-100 transition-colors text-xs font-black shrink-0';
+                    closeBtn.innerHTML = '&times;';
+                    closeBtn.title = `Delete ${cat.name}`;
+                    closeBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        openConfirm('delete', cat.id);
+                    });
+                    tab.appendChild(closeBtn);
+                }
+
+                tab.addEventListener('click', () => {
+                    if (state.activeCategoryId !== cat.id) {
+                        state.activeCategoryId = cat.id;
+                        saveData();
+                        updateUI();
+                    }
+                });
+
+                els.categoryTabsList.appendChild(tab);
+            });
+
+            const activeEl = els.categoryTabsList.querySelector('.category-tab.active');
+            if (activeEl) {
+                activeEl.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
+            }
+        }
+
         function updateUI() {
+            const activeCat = getActiveCategory();
+            if (!activeCat) return;
+
+            renderCategoryTabs();
+
             // Update Balance Color and Text
-            els.balanceDisplay.innerText = `$${state.balance.toFixed(2)}`;
-            if (state.balance < 0) {
+            els.balanceDisplay.innerText = `$${activeCat.balance.toFixed(2)}`;
+            if (activeCat.balance < 0) {
                 els.balanceDisplay.classList.remove('text-green-500', 'text-gray-800');
                 els.balanceDisplay.classList.add('text-orange-500');
-            } else if (state.balance > 0) {
+            } else if (activeCat.balance > 0) {
                 els.balanceDisplay.classList.remove('text-orange-500', 'text-gray-800');
                 els.balanceDisplay.classList.add('text-green-500');
             } else {
@@ -420,11 +622,17 @@
                 els.balanceDisplay.classList.add('text-gray-800');
             }
 
-            els.dailyDisplay.innerText = `$${state.budget}`;
+            els.dailyDisplay.innerText = `$${activeCat.budget}`;
             
             // Update last reset date indicator
             if (els.resetDateDisplay) {
-                els.resetDateDisplay.innerText = formatLastReset(state.lastReset);
+                els.resetDateDisplay.innerText = formatLastReset(activeCat.lastReset);
+            }
+
+            // Update drawer title to include active category
+            const drawerHeaderTitle = els.drawerHeader ? els.drawerHeader.querySelector('h3') : null;
+            if (drawerHeaderTitle) {
+                drawerHeaderTitle.innerText = `History (${activeCat.name})`;
             }
             
             renderHistory();
@@ -437,15 +645,16 @@
         }
 
         function renderHistory() {
+            const activeCat = getActiveCategory();
             els.historyList.innerHTML = '';
             
-            if (state.transactions.length === 0) {
+            if (!activeCat || activeCat.transactions.length === 0) {
                 els.historyList.innerHTML = `<div class="text-center text-gray-400 font-bold mt-8">No transactions yet!</div>`;
                 return;
             }
 
             // Sort newest first
-            const sorted = [...state.transactions].sort((a, b) => b.id - a.id);
+            const sorted = [...activeCat.transactions].sort((a, b) => b.id - a.id);
 
             sorted.forEach(tx => {
                 const isSpend = tx.type === 'spend';
@@ -482,20 +691,50 @@
 
         // --- Actions ---
         function handleSetupSubmit() {
+            const catName = els.setupCatName.value.trim();
             const val = parseFloat(els.setupInput.value);
-            if (isNaN(val) || val <= 0) {
+
+            if (!catName) {
+                els.setupErrorMsg.innerText = 'Enter a category name!';
                 showError(els.setupError);
+                els.setupCatName.focus();
                 return;
             }
-            state.budget = val;
-            state.balance = val; // Day 1 balance
-            state.lastLogin = new Date().toISOString();
-            state.lastReset = new Date().toISOString();
+
+            if (isNaN(val) || val <= 0) {
+                els.setupErrorMsg.innerText = 'Amount must be > 0!';
+                showError(els.setupError);
+                els.setupInput.focus();
+                return;
+            }
+
+            const catId = 'cat_' + Date.now();
+            const now = new Date().toISOString();
+
+            state = {
+                activeCategoryId: catId,
+                categories: [{
+                    id: catId,
+                    name: catName,
+                    budget: val,
+                    balance: val, // Day 1 balance
+                    lastLogin: now,
+                    lastReset: now,
+                    transactions: []
+                }]
+            };
+
             saveData();
             showMainView();
         }
 
         els.btnStart.addEventListener('click', handleSetupSubmit);
+        els.setupCatName.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                els.setupInput.focus();
+            }
+        });
         els.setupInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
@@ -504,6 +743,9 @@
         });
 
         function handleTransaction(type) {
+            const activeCat = getActiveCategory();
+            if (!activeCat) return;
+
             const amount = parseFloat(els.txAmount.value);
             if (isNaN(amount) || amount <= 0) {
                 showError(els.txError);
@@ -513,12 +755,12 @@
             const desc = els.txDesc.value.trim();
             
             if (type === 'spend') {
-                state.balance -= amount;
+                activeCat.balance -= amount;
             } else {
-                state.balance += amount;
+                activeCat.balance += amount;
             }
 
-            state.transactions.push({
+            activeCat.transactions.push({
                 id: Date.now(),
                 amount: amount,
                 type: type,
@@ -559,57 +801,123 @@
         });
 
         function deleteTransaction(id) {
-            const txIndex = state.transactions.findIndex(t => t.id === id);
+            const activeCat = getActiveCategory();
+            if (!activeCat) return;
+
+            const txIndex = activeCat.transactions.findIndex(t => t.id === id);
             if (txIndex === -1) return;
             
-            const tx = state.transactions[txIndex];
+            const tx = activeCat.transactions[txIndex];
             
             // Reverse math
             if (tx.type === 'spend') {
-                state.balance += tx.amount;
+                activeCat.balance += tx.amount;
             } else {
-                state.balance -= tx.amount;
+                activeCat.balance -= tx.amount;
             }
             
-            state.transactions.splice(txIndex, 1);
+            activeCat.transactions.splice(txIndex, 1);
             saveData();
             updateUI();
         }
 
-        // --- Confirmation Modal Actions ---
-        function openConfirm() {
-            els.modalConfirm.classList.remove('opacity-0', 'pointer-events-none');
-            els.modalConfirmContent.classList.remove('scale-90');
-            els.modalConfirmContent.classList.add('scale-100');
+        // --- New Category Modal Actions ---
+        function openNewCategory() {
+            els.newCatName.value = '';
+            els.newCatBudget.value = '';
+            els.modalNewCategory.classList.remove('opacity-0', 'pointer-events-none');
+            els.modalNewCategoryContent.classList.remove('scale-90');
+            els.modalNewCategoryContent.classList.add('scale-100');
+            setTimeout(() => els.newCatName.focus(), 150);
         }
 
-        function closeConfirm() {
-            els.modalConfirm.classList.add('opacity-0', 'pointer-events-none');
-            els.modalConfirmContent.classList.remove('scale-100');
-            els.modalConfirmContent.classList.add('scale-90');
+        function closeNewCategory() {
+            els.modalNewCategory.classList.add('opacity-0', 'pointer-events-none');
+            els.modalNewCategoryContent.classList.remove('scale-100');
+            els.modalNewCategoryContent.classList.add('scale-90');
         }
 
-        els.btnReset.addEventListener('click', openConfirm);
-        els.btnConfirmCancel.addEventListener('click', closeConfirm);
-        els.modalConfirm.addEventListener('click', (e) => {
-            if (e.target === els.modalConfirm) {
-                closeConfirm();
+        function handleCreateCategory() {
+            const name = els.newCatName.value.trim();
+            const budget = parseFloat(els.newCatBudget.value);
+
+            if (!name) {
+                els.newCatErrorMsg.innerText = 'Enter a category name!';
+                showError(els.newCatError);
+                els.newCatName.focus();
+                return;
+            }
+
+            const duplicate = state.categories.some(c => c.name.toLowerCase() === name.toLowerCase());
+            if (duplicate) {
+                els.newCatErrorMsg.innerText = 'Category already exists!';
+                showError(els.newCatError);
+                els.newCatName.focus();
+                return;
+            }
+
+            if (isNaN(budget) || budget <= 0) {
+                els.newCatErrorMsg.innerText = 'Amount must be > 0!';
+                showError(els.newCatError);
+                els.newCatBudget.focus();
+                return;
+            }
+
+            const catId = 'cat_' + Date.now();
+            const now = new Date().toISOString();
+            const newCat = {
+                id: catId,
+                name: name,
+                budget: budget,
+                balance: budget, // Day 1 balance starts at daily budget
+                lastLogin: now,
+                lastReset: now,
+                transactions: []
+            };
+
+            state.categories.push(newCat);
+            state.activeCategoryId = catId;
+            saveData();
+            closeNewCategory();
+            updateUI();
+        }
+
+        els.btnAddCategory.addEventListener('click', openNewCategory);
+        els.btnCloseNewCat.addEventListener('click', closeNewCategory);
+        els.btnCreateCategory.addEventListener('click', handleCreateCategory);
+        els.newCatName.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                els.newCatBudget.focus();
             }
         });
-
-        els.btnConfirmYes.addEventListener('click', () => {
-            state.balance = state.budget;
-            state.transactions = [];
-            state.lastLogin = new Date().toISOString();
-            state.lastReset = new Date().toISOString();
-            saveData();
-            updateUI();
-            closeConfirm();
+        els.newCatBudget.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleCreateCategory();
+            }
+        });
+        els.modalNewCategory.addEventListener('click', (e) => {
+            if (e.target === els.modalNewCategory) {
+                closeNewCategory();
+            }
         });
 
         // --- Settings Modal Actions ---
         function openSettings() {
-            els.settingsInput.value = state.budget;
+            const activeCat = getActiveCategory();
+            if (!activeCat) return;
+
+            els.settingsCatName.value = activeCat.name;
+            els.settingsInput.value = activeCat.budget;
+
+            // Show/hide delete button depending on category count
+            if (state.categories.length > 1) {
+                els.btnDeleteCategory.classList.remove('hidden');
+            } else {
+                els.btnDeleteCategory.classList.add('hidden');
+            }
+
             els.modalSettings.classList.remove('opacity-0', 'pointer-events-none');
             els.modalSettingsContent.classList.remove('scale-90');
             els.modalSettingsContent.classList.add('scale-100');
@@ -621,36 +929,136 @@
             els.modalSettingsContent.classList.add('scale-90');
         }
 
-        els.btnEditBudget.addEventListener('click', openSettings);
-        els.btnCloseSettings.addEventListener('click', closeSettings);
-        els.modalSettings.addEventListener('click', (e) => {
-            if (e.target === els.modalSettings) {
-                closeSettings();
-            }
-        });
-
         function handleSaveSettings() {
-            const val = parseFloat(els.settingsInput.value);
-            if (isNaN(val) || val <= 0) {
+            const activeCat = getActiveCategory();
+            if (!activeCat) return;
+
+            const name = els.settingsCatName.value.trim();
+            const budget = parseFloat(els.settingsInput.value);
+
+            if (!name) {
+                els.settingsErrorMsg.innerText = 'Enter a category name!';
                 showError(els.settingsError);
+                els.settingsCatName.focus();
                 return;
             }
-            state.budget = val;
+
+            const duplicate = state.categories.some(c => c.id !== activeCat.id && c.name.toLowerCase() === name.toLowerCase());
+            if (duplicate) {
+                els.settingsErrorMsg.innerText = 'Category already exists!';
+                showError(els.settingsError);
+                els.settingsCatName.focus();
+                return;
+            }
+
+            if (isNaN(budget) || budget <= 0) {
+                els.settingsErrorMsg.innerText = 'Amount must be > 0!';
+                showError(els.settingsError);
+                els.settingsInput.focus();
+                return;
+            }
+
+            activeCat.name = name;
+            activeCat.budget = budget;
             saveData();
             updateUI();
             closeSettings();
         }
 
+        els.btnEditBudget.addEventListener('click', openSettings);
+        els.btnCloseSettings.addEventListener('click', closeSettings);
         els.btnSaveSettings.addEventListener('click', handleSaveSettings);
+        els.settingsCatName.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                els.settingsInput.focus();
+            }
+        });
         els.settingsInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 handleSaveSettings();
             }
         });
+        els.btnDeleteCategory.addEventListener('click', () => {
+            const activeCat = getActiveCategory();
+            if (activeCat && state.categories.length > 1) {
+                closeSettings();
+                openConfirm('delete', activeCat.id);
+            }
+        });
+        els.modalSettings.addEventListener('click', (e) => {
+            if (e.target === els.modalSettings) {
+                closeSettings();
+            }
+        });
+
+        // --- Confirmation Modal Actions ---
+        let confirmContext = { type: 'reset', catId: null };
+
+        function openConfirm(type = 'reset', catId = null) {
+            confirmContext = { type, catId };
+            const activeCat = getActiveCategory();
+
+            if (type === 'delete') {
+                const catToDelete = state.categories.find(c => c.id === catId) || activeCat;
+                els.confirmTitle.innerText = 'Delete Category?';
+                els.confirmMessage.innerText = `This will permanently remove "${catToDelete ? catToDelete.name : 'this category'}" and all of its transactions.`;
+                els.btnConfirmYes.innerText = 'Delete';
+            } else {
+                els.confirmTitle.innerText = 'Reset?';
+                els.confirmMessage.innerText = `This will clear transactions and reset balance to daily budget for "${activeCat ? activeCat.name : 'this category'}". Continue?`;
+                els.btnConfirmYes.innerText = 'Reset';
+            }
+
+            els.modalConfirm.classList.remove('opacity-0', 'pointer-events-none');
+            els.modalConfirmContent.classList.remove('scale-90');
+            els.modalConfirmContent.classList.add('scale-100');
+        }
+
+        function closeConfirm() {
+            els.modalConfirm.classList.add('opacity-0', 'pointer-events-none');
+            els.modalConfirmContent.classList.remove('scale-100');
+            els.modalConfirmContent.classList.add('scale-90');
+        }
+
+        els.btnReset.addEventListener('click', () => openConfirm('reset'));
+        els.btnConfirmCancel.addEventListener('click', closeConfirm);
+        els.modalConfirm.addEventListener('click', (e) => {
+            if (e.target === els.modalConfirm) {
+                closeConfirm();
+            }
+        });
+
+        els.btnConfirmYes.addEventListener('click', () => {
+            if (confirmContext.type === 'delete') {
+                const catId = confirmContext.catId;
+                const idx = state.categories.findIndex(c => c.id === catId);
+                if (idx !== -1 && state.categories.length > 1) {
+                    state.categories.splice(idx, 1);
+                    if (state.activeCategoryId === catId) {
+                        state.activeCategoryId = state.categories[0].id;
+                    }
+                    saveData();
+                    updateUI();
+                }
+            } else {
+                const activeCat = getActiveCategory();
+                if (activeCat) {
+                    activeCat.balance = activeCat.budget;
+                    activeCat.transactions = [];
+                    activeCat.lastLogin = new Date().toISOString();
+                    activeCat.lastReset = new Date().toISOString();
+                    saveData();
+                    updateUI();
+                }
+            }
+            closeConfirm();
+        });
 
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
+                closeNewCategory();
                 closeSettings();
                 closeConfirm();
             }

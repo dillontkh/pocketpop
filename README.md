@@ -44,7 +44,8 @@ Since PocketPop is fully static, there is no build step required. You can run it
 ## ✨ Features
 
 * **Neubrutalist Toy Aesthetic:** Inspired by tactile interfaces and retro game aesthetics. Built using Tailwind CSS utility borders (`toy-border`, `toy-shadow`), the Quicksand font, and Lucide icons.
-* **Daily Budgeting Roll-overs:** Set your daily target (e.g., $15.00). Each midnight that passes, the system calculates elapsed days and increments your available balance.
+* **User Configurable Categories & Browser Tabs:** Create and customize category envelopes (e.g., Food, Transit, Fun) during onboarding and on the fly. Switch seamlessly between categories using tactile, browser-style tabs.
+* **Envelope Budgeting & Midnight Rollovers:** Each category maintains its own daily budget, running balance, and transaction history. Every midnight, elapsed days automatically increment funds for each envelope.
 * **Instant Record & Categorization:** Add income (Get 🟢) or expenses (Spend 💗) with simple descriptions in just two taps.
 * **Interactive History Drawer:** Swipes up to reveal full transaction log history. You can easily delete incorrect transactions to adjust your balance.
 * **PWA & Offline Ready:** Configured with a Service Worker caching setup so that the app loads instantly, even when completely offline.
