@@ -218,7 +218,8 @@ export function initModals() {
     }
 
     // Settings Modal listeners
-    if (els.btnEditBudget) els.btnEditBudget.addEventListener('click', openSettings);
+    const editBtn = els.btnEditCategory || els.btnEditBudget;
+    if (editBtn) editBtn.addEventListener('click', openSettings);
     if (els.btnCloseSettings) els.btnCloseSettings.addEventListener('click', closeSettings);
     if (els.btnSaveSettings) els.btnSaveSettings.addEventListener('click', handleSaveSettings);
     if (els.settingsCatName) {

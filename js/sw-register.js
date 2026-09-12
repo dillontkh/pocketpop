@@ -23,7 +23,7 @@ export function initServiceWorker() {
                 .then(reg => {
                     console.log('Service Worker registered successfully:', reg.scope);
                     // Force check for updates on load
-                    reg.update();
+                    reg.update().catch(() => {});
                 })
                 .catch(err => console.error('Service Worker registration failed:', err));
         });

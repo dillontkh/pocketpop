@@ -92,14 +92,17 @@
         </div>
 
         <!-- Balance Display -->
-        <div class="flex-1 flex flex-col items-center justify-center px-4 -mt-4 shrink-0">
+        <div class="flex-1 flex flex-col items-center justify-center px-4 -mt-4 shrink-0 relative">
+            <button id="btn-edit-category" title="Edit Category" aria-label="Edit Category" class="absolute top-7 right-4 bg-yellow-200 hover:bg-yellow-300 text-gray-700 rounded-full w-9 h-9 toy-border toy-shadow-sm toy-interactive-sm flex items-center justify-center cursor-pointer outline-none">
+                <i data-lucide="pencil" class="w-4 h-4 text-gray-700" stroke-width="2.5"></i>
+            </button>
             <h2 class="text-lg font-bold text-gray-500 uppercase tracking-widest mb-2">Available Budget</h2>
             <div id="balance-display" class="text-7xl font-black tracking-tighter truncate w-full text-center px-2">
                 $0.00
             </div>
-            <button id="btn-edit-budget" class="text-sm font-bold text-gray-500 mt-2 bg-yellow-200 hover:bg-yellow-300 toy-border toy-shadow-sm px-4 py-1.5 rounded-2xl flex items-center gap-1.5 toy-interactive-sm cursor-pointer outline-none">
-                +<span id="daily-amount-display">0</span> added daily <i data-lucide="pencil" class="w-3.5 h-3.5 text-gray-600" stroke-width="3"></i>
-            </button>
+            <div class="text-sm font-bold text-gray-400 mt-2">
+                +<span id="daily-amount-display">0</span> added daily
+            </div>
         </div>
 
         <!-- Transaction Input Area -->

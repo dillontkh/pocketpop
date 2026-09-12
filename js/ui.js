@@ -42,7 +42,7 @@ export const els = {
     btnCloseNewCat: document.getElementById('btn-close-new-cat'),
 
     // Settings Modal
-    btnEditBudget: document.getElementById('btn-edit-budget'),
+    btnEditCategory: document.getElementById('btn-edit-category') || document.getElementById('btn-edit-budget'),
     modalSettings: document.getElementById('modal-settings'),
     modalSettingsContent: document.getElementById('settings-modal-content'),
     settingsCatName: document.getElementById('settings-cat-name'),
