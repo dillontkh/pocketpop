@@ -1,5 +1,5 @@
 const { test, expect } = require('@playwright/test');
-const { createTestState, seedStorage } = require('./helpers');
+const { createTestState, seedStorage, openSettings } = require('./helpers');
 
 test.describe('Consolidated Settings & Preferences', () => {
   test.beforeEach(async ({ page }) => {
@@ -17,7 +17,7 @@ test.describe('Consolidated Settings & Preferences', () => {
   });
 
   test('opens settings modal with all categories and default category dropdown', async ({ page }) => {
-    await page.click('#btn-settings');
+    await openSettings(page);
     const modal = page.locator('#modal-settings');
     await expect(modal).not.toHaveClass(/opacity-0/);
 
@@ -40,7 +40,7 @@ test.describe('Consolidated Settings & Preferences', () => {
   });
 
   test('syncs edited category name to default category dropdown in real time', async ({ page }) => {
-    await page.click('#btn-settings');
+    await openSettings(page);
 
     const firstRowNameInput = page.locator('#settings-categories-list .category-row:first-child .cat-name-input');
     await firstRowNameInput.fill('Everyday');
@@ -50,7 +50,7 @@ test.describe('Consolidated Settings & Preferences', () => {
   });
 
   test('validates settings inputs on save', async ({ page }) => {
-    await page.click('#btn-settings');
+    await openSettings(page);
     const errorMsg = page.locator('#settings-error-msg');
 
     // Test empty name
@@ -74,7 +74,7 @@ test.describe('Consolidated Settings & Preferences', () => {
   });
 
   test('saves changes and updates main dashboard', async ({ page }) => {
-    await page.click('#btn-settings');
+    await openSettings(page);
 
     // Edit food budget from 40 to 60
     const foodBudgetInput = page.locator('#settings-categories-list .category-row').nth(1).locator('.cat-budget-input');
@@ -89,7 +89,7 @@ test.describe('Consolidated Settings & Preferences', () => {
   });
 
   test('persists default category on launch', async ({ page }) => {
-    await page.click('#btn-settings');
+    await openSettings(page);
 
     // Select 'Transport' as default category on launch
     await page.selectOption('#settings-default-category', 'cat_transport');

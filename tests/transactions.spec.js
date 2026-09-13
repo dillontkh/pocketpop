@@ -79,7 +79,8 @@ test.describe('Budget Transactions & History Drawer', () => {
     await page.click('#btn-spend');
     await expect(page.locator('#balance-display')).toHaveText('$10.00');
 
-    // Click Reset in header
+    // Click Reset in hamburger menu
+    await page.click('#btn-menu');
     await page.click('#btn-reset');
     const confirmModal = page.locator('#modal-confirm');
     await expect(confirmModal).not.toHaveClass(/opacity-0/);

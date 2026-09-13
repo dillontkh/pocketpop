@@ -13,6 +13,7 @@ test.describe('Category Drag & Drop Reordering', () => {
     });
     await seedStorage(page, state);
     await page.goto('/');
+    await page.click('#btn-menu');
     await page.click('#btn-settings');
   });
 

@@ -5,6 +5,7 @@ import { els, updateUI, showMainView, showSetupView } from './ui.js';
 import { showError } from './formatters.js';
 import { initDrawer } from './drawer.js';
 import { initModals } from './modals.js';
+import { initMenu } from './menu.js';
 import { initServiceWorker } from './sw-register.js';
 
 function handleTransactionInput(type) {
@@ -78,6 +79,7 @@ function initLifecycleListeners() {
 function init() {
     initDrawer();
     initModals();
+    initMenu();
     initTransactionListeners();
     initLifecycleListeners();
     initServiceWorker();

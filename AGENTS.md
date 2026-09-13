@@ -18,3 +18,21 @@ PocketPop is a neubrutalist PWA budget tracker deployed on GitHub Pages.
 
 ## 🤖 Agent Instructions
 * Keep all codebase modifications, scripts, documentation, and agent notes highly concise, precise, and information-dense.
+
+## 💡 Development & Testing Lessons
+
+* **State & Aggregations:**
+  * Keep derived metrics (e.g., aggregate surplus/deficit, burn rates) computed on demand in `js/state.js` rather than persisting redundant calculated fields in `localStorage`.
+  * Always call `saveState()` after mutating `pocketpop_data`.
+  * Dynamic DOM injections containing `<i data-lucide="...">` require `if (window.lucide) window.lucide.createIcons();`.
+
+* **Testing Patterns:**
+  * Run the full Playwright test suite via `npm test` (uses the built-in server in `tests/server.js`).
+  * Seed test states with `createTestState()` and `seedStorage(page, state)` from `tests/helpers.js` before `page.goto('/')`.
+  * Never commit machine-specific or absolute filesystem paths into tests to maintain CI portability.
+
+* **UI & Visual Verification:**
+  * Modal dialogs use CSS transitions (`duration-200`). When capturing visual snapshots, wait for transitions to finish to prevent capturing semi-transparent frames.
+  * Maintain Neubrutalist conventions: high-contrast dark borders (`border-gray-800`), offset drop shadows (`toy-shadow`), bold typography, and semantic color cues (emerald for surplus/under budget, orange for deficit/over budget).
+  * Header uses `z-20` so the hamburger dropdown (`#menu-dropdown`) cleanly layers above the category tab bar (`z-10`).
+

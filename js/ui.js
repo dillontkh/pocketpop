@@ -17,6 +17,9 @@ export const els = {
 
     balanceDisplay: document.getElementById('balance-display'),
     dailyDisplay: document.getElementById('daily-amount-display'),
+    btnMenu: document.getElementById('btn-menu'),
+    menuDropdown: document.getElementById('menu-dropdown'),
+    menuContainer: document.getElementById('menu-container'),
     btnReset: document.getElementById('btn-reset'),
     btnSettings: document.getElementById('btn-settings'),
     resetDateDisplay: document.getElementById('reset-date-display'),
@@ -39,6 +42,7 @@ export const els = {
     btnCloseOverview: document.getElementById('btn-close-overview'),
     btnDoneOverview: document.getElementById('btn-done-overview'),
     overviewHeroCard: document.getElementById('overview-hero-card'),
+    overviewSubtitle: document.getElementById('overview-subtitle'),
     overviewTotalBalance: document.getElementById('overview-total-balance'),
     overviewAvgUsed: document.getElementById('overview-avg-used'),
     overviewDailyTotal: document.getElementById('overview-daily-total'),
@@ -206,10 +210,46 @@ function escapeHtml(str) {
         .replace(/"/g, '&quot;');
 }
 
-export function renderOverview() {
+let currentOverviewData = null;
+let isShowingPreResetOverview = false;
+
+export function clearOverviewData() {
+    currentOverviewData = null;
+    isShowingPreResetOverview = false;
+    if (els.overviewSubtitle) {
+        els.overviewSubtitle.innerText = '';
+        els.overviewSubtitle.classList.add('hidden');
+    }
+}
+
+export function renderOverview(data = null, options = {}) {
     if (!els.modalOverview) return;
 
-    const overview = getBudgetOverview();
+    if (data && (data instanceof Event || typeof data.preventDefault === 'function')) {
+        data = null;
+    }
+
+    if (options.isPostReset !== undefined) {
+        isShowingPreResetOverview = !!options.isPostReset;
+        currentOverviewData = isShowingPreResetOverview ? data : null;
+    } else if (data) {
+        currentOverviewData = data;
+    } else if (!isShowingPreResetOverview) {
+        currentOverviewData = getBudgetOverview();
+    }
+
+    const overview = currentOverviewData || getBudgetOverview();
+
+    // 0. Update subtitle
+    if (els.overviewSubtitle) {
+        if (isShowingPreResetOverview) {
+            els.overviewSubtitle.innerText = 'Summary before reset';
+            els.overviewSubtitle.classList.remove('hidden');
+        } else {
+            els.overviewSubtitle.innerText = '';
+            els.overviewSubtitle.classList.add('hidden');
+        }
+    }
 
     // 1. Total balance text & signs
     const formattedTotal = overview.totalNetBalance >= 0 

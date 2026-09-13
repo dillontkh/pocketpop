@@ -10,7 +10,8 @@ import {
     setDefaultCategoryId,
     resetActiveCategory,
     resetAllCategories,
-    setActiveCategoryId
+    setActiveCategoryId,
+    getBudgetOverview
 } from './state.js';
 import {
     els,
@@ -18,16 +19,23 @@ import {
     showMainView,
     setOnTabDeleteCallback,
     renderOverview,
+    clearOverviewData,
     setOnOverviewCategorySelectCallback
 } from './ui.js';
+import { closeMenu } from './menu.js';
 import { showError } from './formatters.js';
 
 let confirmContext = { type: 'reset', catId: null };
 
 // --- Overview Modal ---
-export function openOverview() {
+export function openOverview(overviewData = null, options = {}) {
+    if (overviewData instanceof Event || (overviewData && typeof overviewData.preventDefault === 'function')) {
+        overviewData = null;
+        options = {};
+    }
     if (!els.modalOverview || !els.modalOverviewContent) return;
-    renderOverview();
+    closeMenu();
+    renderOverview(overviewData, options);
     els.modalOverview.classList.remove('opacity-0', 'pointer-events-none');
     els.modalOverviewContent.classList.remove('scale-90');
     els.modalOverviewContent.classList.add('scale-100');
@@ -41,6 +49,7 @@ export function closeOverview() {
     els.modalOverview.classList.add('opacity-0', 'pointer-events-none');
     els.modalOverviewContent.classList.remove('scale-100');
     els.modalOverviewContent.classList.add('scale-90');
+    clearOverviewData();
 }
 
 // --- Onboarding / Setup ---
@@ -68,6 +77,7 @@ export function handleSetupSubmit() {
 
 // --- New Category Modal ---
 export function openNewCategory() {
+    closeMenu();
     els.newCatName.value = '';
     els.newCatBudget.value = '';
     els.modalNewCategory.classList.remove('opacity-0', 'pointer-events-none');
@@ -382,6 +392,7 @@ function initDragDrop() {
 
 // --- Settings Modal ---
 export function openSettings() {
+    closeMenu();
     if (!state.categories || state.categories.length === 0) return;
 
     renderSettingsCategories();
@@ -469,6 +480,7 @@ export function handleSaveSettings() {
 
 // --- Confirmation Modal ---
 export function openConfirm(type = 'reset', catId = null) {
+    closeMenu();
     confirmContext = { type, catId };
     const activeCat = getActiveCategory();
 
@@ -574,11 +586,12 @@ export function initModals() {
                 updateUI();
                 closeConfirm();
             } else {
+                const preResetOverview = getBudgetOverview();
                 resetAllCategories();
                 updateUI();
                 closeConfirm();
                 setTimeout(() => {
-                    openOverview();
+                    openOverview(preResetOverview, { isPostReset: true });
                 }, 150);
             }
         });
@@ -590,7 +603,7 @@ export function initModals() {
     });
 
     // Overview Modal listeners
-    if (els.btnOverview) els.btnOverview.addEventListener('click', openOverview);
+    if (els.btnOverview) els.btnOverview.addEventListener('click', () => openOverview());
     if (els.btnCloseOverview) els.btnCloseOverview.addEventListener('click', closeOverview);
     if (els.btnDoneOverview) els.btnDoneOverview.addEventListener('click', closeOverview);
     if (els.modalOverview) {

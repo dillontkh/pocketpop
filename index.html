@@ -69,7 +69,7 @@
     <div id="view-main" class="flex-1 flex flex-col h-full relative hidden">
         
         <!-- Header -->
-        <header class="relative z-10 flex justify-between items-start p-4 pb-2 shrink-0">
+        <header class="relative z-20 flex justify-between items-start p-4 pb-2 shrink-0">
             <h1 class="text-2xl font-black text-pink-500 tracking-tight">PocketPop</h1>
             <div class="flex flex-col items-end gap-1">
                 <div class="flex items-center gap-1.5 sm:gap-2">
@@ -77,12 +77,24 @@
                         <i data-lucide="pie-chart" class="w-4 h-4" stroke-width="3"></i>
                         <span>Overview</span>
                     </button>
-                    <button id="btn-reset" class="bg-white rounded-full px-2.5 sm:px-3.5 py-1.5 sm:py-2 text-xs sm:text-sm font-bold toy-border toy-shadow-sm toy-interactive-sm text-gray-600 flex items-center gap-1.5">
-                        <i data-lucide="rotate-ccw" class="w-4 h-4" stroke-width="3"></i> Reset
-                    </button>
-                    <button id="btn-settings" title="Settings" aria-label="Settings" class="bg-white rounded-full p-1.5 sm:p-2 text-xs sm:text-sm font-bold toy-border toy-shadow-sm toy-interactive-sm text-gray-600 flex items-center justify-center">
-                        <i data-lucide="settings" class="w-4 h-4" stroke-width="3"></i>
-                    </button>
+                    <!-- Hamburger Menu Container -->
+                    <div class="relative" id="menu-container">
+                        <button id="btn-menu" title="Menu" aria-label="Menu" aria-haspopup="true" aria-expanded="false" class="bg-white rounded-full p-1.5 sm:p-2 text-xs sm:text-sm font-bold toy-border toy-shadow-sm toy-interactive-sm text-gray-600 flex items-center justify-center">
+                            <i data-lucide="menu" class="w-4 h-4 sm:w-5 sm:h-5" stroke-width="3"></i>
+                        </button>
+                        <!-- Hamburger Dropdown Menu -->
+                        <div id="menu-dropdown" class="absolute right-0 top-full mt-2 w-48 bg-white rounded-2xl toy-border toy-shadow p-2 flex flex-col gap-1 z-50 hidden shadow-xl" role="menu" aria-orientation="vertical" aria-labelledby="btn-menu">
+                            <button id="btn-settings" role="menuitem" class="w-full text-left px-3 py-2.5 rounded-xl font-black text-sm text-gray-700 hover:bg-yellow-100 hover:text-gray-900 flex items-center gap-2.5 transition-colors">
+                                <i data-lucide="settings" class="w-4 h-4 text-gray-600" stroke-width="2.5"></i>
+                                <span>Settings</span>
+                            </button>
+                            <div class="border-t-2 border-gray-100 my-0.5" role="separator"></div>
+                            <button id="btn-reset" role="menuitem" class="w-full text-left px-3 py-2.5 rounded-xl font-black text-sm text-pink-600 hover:bg-pink-50 hover:text-pink-700 flex items-center gap-2.5 transition-colors">
+                                <i data-lucide="rotate-ccw" class="w-4 h-4 text-pink-600" stroke-width="2.5"></i>
+                                <span>Reset Budget</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
                 <div id="reset-date-display" class="text-[10px] font-bold text-gray-400 mr-1.5"></div>
             </div>
@@ -282,6 +294,7 @@
 
             <div>
                 <h2 class="text-3xl font-black text-pink-500 tracking-tight">Budget Overview</h2>
+                <div id="overview-subtitle" class="text-xs font-bold text-gray-500 mt-1 hidden"></div>
             </div>
 
             <!-- Unified Net Balance & Daily Burn Section -->

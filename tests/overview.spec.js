@@ -183,7 +183,8 @@ test.describe('Budget Overview & Surplus/Deficit Feature', () => {
     await seedStorage(page, state);
     await page.goto('/');
 
-    // Click Reset in header
+    // Click Reset in hamburger menu
+    await page.click('#btn-menu');
     await page.click('#btn-reset');
     const confirmModal = page.locator('#modal-confirm');
     await expect(confirmModal).not.toHaveClass(/opacity-0/);
@@ -192,24 +193,40 @@ test.describe('Budget Overview & Surplus/Deficit Feature', () => {
     await page.click('#btn-confirm-yes');
     await expect(confirmModal).toHaveClass(/opacity-0/);
 
-    // Overview modal should pop up automatically
+    // Overview modal should pop up automatically showing pre-reset overview
     const overviewModal = page.locator('#modal-overview');
     await expect(overviewModal).not.toHaveClass(/opacity-0/);
 
-    // All categories are reset to their budgets: Food to $20, Travel to $15 -> Total Net = 20 + 15 = $35.00
-    await expect(page.locator('#overview-total-balance')).toHaveText('+$35.00');
+    // Shows summary before reset subtitle
+    await expect(page.locator('#overview-subtitle')).toHaveText('Summary before reset');
+
+    // Pre-reset snapshot: Food balance $10 + Travel balance -$5 -> Total Net = +$5.00
+    await expect(page.locator('#overview-total-balance')).toHaveText('+$5.00');
     await expect(page.locator('#overview-total-balance')).toHaveClass(/text-emerald-600/);
+
+    // Verify category cards in pre-reset overview show pre-reset balances
+    const cards = page.locator('#overview-categories-list .category-overview-card');
+    await expect(cards.nth(0)).toContainText('Food');
+    await expect(cards.nth(0)).toContainText('$10.00');
+    await expect(cards.nth(1)).toContainText('Travel');
+    await expect(cards.nth(1)).toContainText('-$5.00');
 
     // Dismiss overview
     await page.click('#btn-done-overview');
     await expect(overviewModal).toHaveClass(/opacity-0/);
 
-    // Active category (Food) balance is $20.00
+    // Active category (Food) balance on dashboard is now reset to its budget ($20.00)
     await expect(page.locator('#balance-display')).toHaveText('$20.00');
 
     // Switch to Travel tab and verify it was also reset to its budget ($15.00)
     await page.locator('#category-tabs-list .category-tab', { hasText: 'Travel' }).click();
     await expect(page.locator('#balance-display')).toHaveText('$15.00');
+
+    // Open overview again from header button: should now display post-reset state (20 + 15 = $35.00)
+    await page.click('#btn-overview');
+    await expect(overviewModal).not.toHaveClass(/opacity-0/);
+    await expect(page.locator('#overview-subtitle')).toBeHidden();
+    await expect(page.locator('#overview-total-balance')).toHaveText('+$35.00');
   });
 
   test('live updates overview when spending in a category', async ({ page }) => {

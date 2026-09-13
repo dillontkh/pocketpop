@@ -36,3 +36,14 @@ export async function seedStorage(page, state) {
     }
   }, state);
 }
+
+export async function openSettings(page) {
+  await page.click('#btn-menu');
+  await page.click('#btn-settings');
+}
+
+export async function openReset(page) {
+  await page.click('#btn-menu');
+  await page.click('#btn-reset');
+}
+
