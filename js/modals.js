@@ -8,12 +8,40 @@ import {
     updateActiveCategory,
     deleteCategory,
     setDefaultCategoryId,
-    resetActiveCategory
+    resetActiveCategory,
+    resetAllCategories,
+    setActiveCategoryId
 } from './state.js';
-import { els, updateUI, showMainView, setOnTabDeleteCallback } from './ui.js';
+import {
+    els,
+    updateUI,
+    showMainView,
+    setOnTabDeleteCallback,
+    renderOverview,
+    setOnOverviewCategorySelectCallback
+} from './ui.js';
 import { showError } from './formatters.js';
 
 let confirmContext = { type: 'reset', catId: null };
+
+// --- Overview Modal ---
+export function openOverview() {
+    if (!els.modalOverview || !els.modalOverviewContent) return;
+    renderOverview();
+    els.modalOverview.classList.remove('opacity-0', 'pointer-events-none');
+    els.modalOverviewContent.classList.remove('scale-90');
+    els.modalOverviewContent.classList.add('scale-100');
+    if (window.lucide) {
+        window.lucide.createIcons();
+    }
+}
+
+export function closeOverview() {
+    if (!els.modalOverview || !els.modalOverviewContent) return;
+    els.modalOverview.classList.add('opacity-0', 'pointer-events-none');
+    els.modalOverviewContent.classList.remove('scale-100');
+    els.modalOverviewContent.classList.add('scale-90');
+}
 
 // --- Onboarding / Setup ---
 export function handleSetupSubmit() {
@@ -100,7 +128,7 @@ function syncDefaultCategoryDropdown() {
 
     const lastUsedOpt = document.createElement('option');
     lastUsedOpt.value = 'last_used';
-    lastUsedOpt.textContent = 'Last Used (Remember previous)';
+    lastUsedOpt.textContent = 'Last Used';
     els.settingsDefaultCategory.appendChild(lastUsedOpt);
 
     const rows = els.settingsCategoriesList ? els.settingsCategoriesList.querySelectorAll('.category-row') : [];
@@ -450,9 +478,12 @@ export function openConfirm(type = 'reset', catId = null) {
         els.confirmMessage.innerText = `This will permanently remove "${catToDelete ? catToDelete.name : 'this category'}" and all of its transactions.`;
         els.btnConfirmYes.innerText = 'Delete';
     } else {
-        els.confirmTitle.innerText = 'Reset?';
-        els.confirmMessage.innerText = `This will clear transactions and reset balance to daily budget for "${activeCat ? activeCat.name : 'this category'}". Continue?`;
-        els.btnConfirmYes.innerText = 'Reset';
+        const count = state.categories.length;
+        els.confirmTitle.innerText = count > 1 ? 'Reset All Categories?' : 'Reset Budget?';
+        els.confirmMessage.innerText = count > 1
+            ? 'This will clear all transactions and reset balances to daily budget across all categories. Continue?'
+            : `This will clear transactions and reset balance to daily budget for "${activeCat ? activeCat.name : 'this category'}". Continue?`;
+        els.btnConfirmYes.innerText = count > 1 ? 'Reset All' : 'Reset';
     }
 
     els.modalConfirm.classList.remove('opacity-0', 'pointer-events-none');
@@ -541,11 +572,15 @@ export function initModals() {
             if (confirmContext.type === 'delete') {
                 deleteCategory(confirmContext.catId);
                 updateUI();
+                closeConfirm();
             } else {
-                resetActiveCategory();
+                resetAllCategories();
                 updateUI();
+                closeConfirm();
+                setTimeout(() => {
+                    openOverview();
+                }, 150);
             }
-            closeConfirm();
         });
     }
 
@@ -554,12 +589,29 @@ export function initModals() {
         openConfirm('delete', catId);
     });
 
+    // Overview Modal listeners
+    if (els.btnOverview) els.btnOverview.addEventListener('click', openOverview);
+    if (els.btnCloseOverview) els.btnCloseOverview.addEventListener('click', closeOverview);
+    if (els.btnDoneOverview) els.btnDoneOverview.addEventListener('click', closeOverview);
+    if (els.modalOverview) {
+        els.modalOverview.addEventListener('click', (e) => {
+            if (e.target === els.modalOverview) closeOverview();
+        });
+    }
+
+    setOnOverviewCategorySelectCallback((catId) => {
+        setActiveCategoryId(catId);
+        updateUI();
+        closeOverview();
+    });
+
     // Global keyboard listener
     window.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             closeNewCategory();
             closeSettings();
             closeConfirm();
+            closeOverview();
         }
     });
 }

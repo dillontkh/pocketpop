@@ -88,6 +88,12 @@ test.describe('Budget Transactions & History Drawer', () => {
     await page.click('#btn-confirm-yes');
     await expect(confirmModal).toHaveClass(/opacity-0/);
 
+    // Overview modal appears automatically post-reset
+    const overviewModal = page.locator('#modal-overview');
+    await expect(overviewModal).not.toHaveClass(/opacity-0/);
+    await page.click('#btn-done-overview');
+    await expect(overviewModal).toHaveClass(/opacity-0/);
+
     // Balance should be reset to daily budget ($25.00)
     await expect(page.locator('#balance-display')).toHaveText('$25.00');
 

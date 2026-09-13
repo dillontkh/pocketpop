@@ -1,5 +1,5 @@
 // --- UI Rendering & DOM Elements ---
-import { state, getActiveCategory, setActiveCategoryId, deleteTransaction } from './state.js';
+import { state, getActiveCategory, setActiveCategoryId, deleteTransaction, getBudgetOverview } from './state.js';
 import { formatTxDate, formatLastReset } from './formatters.js';
 
 export const els = {
@@ -31,6 +31,18 @@ export const els = {
     drawerHeader: document.getElementById('drawer-header'),
     drawerIcon: document.getElementById('drawer-icon'),
     historyList: document.getElementById('history-list'),
+
+    // Overview Elements
+    btnOverview: document.getElementById('btn-overview'),
+    modalOverview: document.getElementById('modal-overview'),
+    modalOverviewContent: document.getElementById('overview-modal-content'),
+    btnCloseOverview: document.getElementById('btn-close-overview'),
+    btnDoneOverview: document.getElementById('btn-done-overview'),
+    overviewHeroCard: document.getElementById('overview-hero-card'),
+    overviewTotalBalance: document.getElementById('overview-total-balance'),
+    overviewAvgUsed: document.getElementById('overview-avg-used'),
+    overviewDailyTotal: document.getElementById('overview-daily-total'),
+    overviewCategoriesList: document.getElementById('overview-categories-list'),
 
     // New Category Modal
     modalNewCategory: document.getElementById('modal-new-category'),
@@ -66,9 +78,14 @@ export const els = {
 };
 
 let onTabDeleteCallback = null;
+let onOverviewCategorySelectCallback = null;
 
 export function setOnTabDeleteCallback(cb) {
     onTabDeleteCallback = cb;
+}
+
+export function setOnOverviewCategorySelectCallback(cb) {
+    onOverviewCategorySelectCallback = cb;
 }
 
 export function showMainView() {
@@ -181,6 +198,117 @@ export function renderHistory() {
     }
 }
 
+function escapeHtml(str) {
+    return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+export function renderOverview() {
+    if (!els.modalOverview) return;
+
+    const overview = getBudgetOverview();
+
+    // 1. Total balance text & signs
+    const formattedTotal = overview.totalNetBalance >= 0 
+        ? `+$${overview.totalNetBalance.toFixed(2)}` 
+        : `-$${Math.abs(overview.totalNetBalance).toFixed(2)}`;
+    
+    if (els.overviewTotalBalance) {
+        els.overviewTotalBalance.innerText = formattedTotal;
+    }
+
+    // 2. Hero card styling
+    if (els.overviewHeroCard) {
+        els.overviewHeroCard.classList.remove('bg-emerald-100', 'bg-orange-100', 'bg-sky-100');
+        els.overviewTotalBalance.classList.remove('text-emerald-600', 'text-orange-500', 'text-gray-800');
+
+        if (overview.isSurplus) {
+            els.overviewHeroCard.classList.add('bg-emerald-100');
+            els.overviewTotalBalance.classList.add('text-emerald-600');
+        } else if (overview.isDeficit) {
+            els.overviewHeroCard.classList.add('bg-orange-100');
+            els.overviewTotalBalance.classList.add('text-orange-500');
+        } else {
+            els.overviewHeroCard.classList.add('bg-sky-100');
+            els.overviewTotalBalance.classList.add('text-gray-800');
+        }
+    }
+
+    // 3. Avg used per day & total daily allowance
+    if (els.overviewAvgUsed) {
+        els.overviewAvgUsed.innerText = `$${overview.avgUsedPerDay.toFixed(2)}`;
+        els.overviewAvgUsed.classList.remove('text-emerald-600', 'text-orange-500', 'text-gray-800');
+        if (overview.avgUsedPerDay > overview.totalDailyBudget) {
+            els.overviewAvgUsed.classList.add('text-orange-500');
+        } else if (overview.avgUsedPerDay > 0) {
+            els.overviewAvgUsed.classList.add('text-emerald-600');
+        } else {
+            els.overviewAvgUsed.classList.add('text-gray-800');
+        }
+    }
+    if (els.overviewDailyTotal) {
+        els.overviewDailyTotal.innerText = `$${overview.totalDailyBudget.toFixed(2)}`;
+    }
+
+    // 4. Categories breakdown list
+    if (els.overviewCategoriesList) {
+        els.overviewCategoriesList.innerHTML = '';
+
+        if (overview.categories.length === 0) {
+            els.overviewCategoriesList.innerHTML = `<div class="text-center text-gray-400 font-bold py-4">No categories created yet!</div>`;
+        } else {
+            overview.categories.forEach(cat => {
+                const row = document.createElement('div');
+                row.className = 'category-overview-card bg-white hover:bg-yellow-50 active:bg-yellow-100 rounded-xl px-3 py-2 toy-border toy-shadow-sm toy-interactive-sm flex items-center justify-between gap-2 cursor-pointer select-none transition-all';
+                row.dataset.catId = cat.id;
+
+                let balanceColor = 'text-gray-800';
+
+                if (cat.status === 'under') {
+                    balanceColor = 'text-emerald-600';
+                } else if (cat.status === 'over') {
+                    balanceColor = 'text-orange-500';
+                } else {
+                    balanceColor = 'text-gray-700';
+                }
+
+                const formattedBalance = cat.balance < 0 
+                    ? `-$${Math.abs(cat.balance).toFixed(2)}` 
+                    : `$${cat.balance.toFixed(2)}`;
+
+                row.innerHTML = `
+                    <div class="flex items-center gap-2 overflow-hidden min-w-0">
+                        <span class="font-black text-sm text-gray-800 truncate">${escapeHtml(cat.name)}</span>
+                        <span class="text-xs font-bold text-gray-400 shrink-0">+$${cat.budget}/day</span>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <span class="text-sm sm:text-base font-black ${balanceColor}">${formattedBalance}</span>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-gray-400" stroke-width="3"></i>
+                    </div>
+                `;
+
+                row.addEventListener('click', () => {
+                    if (onOverviewCategorySelectCallback) {
+                        onOverviewCategorySelectCallback(cat.id);
+                    } else {
+                        setActiveCategoryId(cat.id);
+                        updateUI();
+                    }
+                });
+
+                els.overviewCategoriesList.appendChild(row);
+            });
+        }
+    }
+
+    if (window.lucide) {
+        window.lucide.createIcons();
+    }
+}
+
 export function updateUI() {
     const activeCat = getActiveCategory();
     if (!activeCat) return;
@@ -214,4 +342,8 @@ export function updateUI() {
     }
     
     renderHistory();
+
+    if (els.modalOverview && !els.modalOverview.classList.contains('opacity-0')) {
+        renderOverview();
+    }
 }

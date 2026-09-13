@@ -165,6 +165,19 @@ export function resetActiveCategory() {
     return activeCat;
 }
 
+export function resetAllCategories() {
+    if (!state.categories || state.categories.length === 0) return false;
+    const now = new Date().toISOString();
+    state.categories.forEach(cat => {
+        cat.balance = cat.budget;
+        cat.transactions = [];
+        cat.lastLogin = now;
+        cat.lastReset = now;
+    });
+    saveData();
+    return true;
+}
+
 export function addTransaction(type, amount, desc) {
     const activeCat = getActiveCategory();
     if (!activeCat) return null;
@@ -208,3 +221,93 @@ export function deleteTransaction(txId) {
     saveData();
     return true;
 }
+
+export function getBudgetOverview() {
+    let totalNetBalance = 0;
+    let totalDailyBudget = 0;
+    let underCount = 0;
+    let overCount = 0;
+    let onTrackCount = 0;
+
+    const categories = (state.categories || []).map(cat => {
+        const balance = Number(cat.balance) || 0;
+        const budget = Number(cat.budget) || 0;
+        totalNetBalance += balance;
+        totalDailyBudget += budget;
+
+        let status = 'on_track';
+        if (balance > 0) {
+            status = 'under';
+            underCount++;
+        } else if (balance < 0) {
+            status = 'over';
+            overCount++;
+        } else {
+            onTrackCount++;
+        }
+
+        return {
+            id: cat.id,
+            name: cat.name,
+            budget: budget,
+            balance: balance,
+            status: status,
+            diff: balance
+        };
+    });
+
+    totalNetBalance = Math.round(totalNetBalance * 100) / 100;
+    totalDailyBudget = Math.round(totalDailyBudget * 100) / 100;
+
+    const isSurplus = totalNetBalance > 0;
+    const isDeficit = totalNetBalance < 0;
+    const isEven = totalNetBalance === 0;
+
+    // Calculate total spent in current period across all categories
+    let totalSpent = 0;
+    let earliestReset = null;
+
+    (state.categories || []).forEach(cat => {
+        if (cat.lastReset) {
+            const d = new Date(cat.lastReset).getTime();
+            if (!isNaN(d) && (earliestReset === null || d < earliestReset)) {
+                earliestReset = d;
+            }
+        }
+
+        (cat.transactions || []).forEach(tx => {
+            if (tx.type === 'spend') {
+                totalSpent += Number(tx.amount) || 0;
+            } else if (tx.type === 'get' && tx.desc !== 'Daily Budget') {
+                totalSpent -= Number(tx.amount) || 0;
+            }
+        });
+    });
+
+    if (totalSpent < 0) totalSpent = 0;
+
+    const now = new Date();
+    const nowMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const resetDate = earliestReset ? new Date(earliestReset) : now;
+    const resetMidnight = new Date(resetDate.getFullYear(), resetDate.getMonth(), resetDate.getDate()).getTime();
+    const diffDays = Math.floor((nowMidnight - resetMidnight) / (1000 * 60 * 60 * 24));
+    const periodDays = Math.max(1, diffDays + 1);
+
+    const avgUsedPerDay = Math.round((totalSpent / periodDays) * 100) / 100;
+
+    return {
+        totalNetBalance,
+        totalDailyBudget,
+        avgUsedPerDay,
+        totalSpent,
+        periodDays,
+        isSurplus,
+        isDeficit,
+        isEven,
+        underCount,
+        overCount,
+        onTrackCount,
+        categories
+    };
+}
+
