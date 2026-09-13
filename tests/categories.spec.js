@@ -48,6 +48,8 @@ test.describe('Categories & Tabs Management', () => {
     await expect(tabs).toHaveCount(4);
     await expect(tabs.nth(3)).toContainText('Fitness');
     await expect(page.locator('#balance-display')).toHaveText('$50.00');
+    // Category tabs should not have close/delete buttons
+    await expect(page.locator('#category-tabs-list .category-tab button')).toHaveCount(0);
   });
 
   test('validates duplicate category name', async ({ page }) => {
@@ -60,10 +62,16 @@ test.describe('Categories & Tabs Management', () => {
     await expect(errorMsg).toHaveText('Category already exists!');
   });
 
-  test('deletes a category with confirmation', async ({ page }) => {
-    // Click close '×' button on 'Transport' tab
-    const transportTab = page.locator('#category-tabs-list .category-tab', { hasText: 'Transport' });
-    await transportTab.locator('button[title*="Delete"]').click();
+  test('deletes a category with confirmation via settings', async ({ page }) => {
+    // Tabs do not have delete buttons
+    await expect(page.locator('#category-tabs-list .category-tab button')).toHaveCount(0);
+
+    // Open Settings and delete 'Transport'
+    await page.click('#btn-menu');
+    await page.click('#btn-settings');
+
+    const transportRow = page.locator('#settings-categories-list .category-row[data-id="cat_transport"]');
+    await transportRow.locator('.btn-delete-row').click();
 
     // Confirm modal should appear
     const confirmModal = page.locator('#modal-confirm');

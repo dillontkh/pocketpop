@@ -81,12 +81,9 @@ export const els = {
     btnUpdateReload: document.getElementById('btn-update-reload')
 };
 
-let onTabDeleteCallback = null;
 let onOverviewCategorySelectCallback = null;
 
-export function setOnTabDeleteCallback(cb) {
-    onTabDeleteCallback = cb;
-}
+export function setOnTabDeleteCallback() {}
 
 export function setOnOverviewCategorySelectCallback(cb) {
     onOverviewCategorySelectCallback = cb;
@@ -118,24 +115,9 @@ export function renderCategoryTabs() {
         tab.dataset.catId = cat.id;
 
         const nameSpan = document.createElement('span');
-        nameSpan.className = 'truncate max-w-[110px]';
+        nameSpan.className = 'truncate max-w-[120px]';
         nameSpan.textContent = cat.name;
         tab.appendChild(nameSpan);
-
-        // Show close/delete button on tab if more than 1 category
-        if (state.categories.length > 1) {
-            const closeBtn = document.createElement('button');
-            closeBtn.className = 'w-4 h-4 rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-gray-100 transition-colors text-xs font-black shrink-0';
-            closeBtn.innerHTML = '&times;';
-            closeBtn.title = `Delete ${cat.name}`;
-            closeBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (onTabDeleteCallback) {
-                    onTabDeleteCallback(cat.id);
-                }
-            });
-            tab.appendChild(closeBtn);
-        }
 
         tab.addEventListener('click', () => {
             if (state.activeCategoryId !== cat.id) {
